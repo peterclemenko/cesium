@@ -8,24 +8,7 @@ define([
         'dojo/on',
         'dijit/_WidgetBase',
         'dijit/_TemplatedMixin',
-        '../../Core/BoundingRectangle',
-        '../../Core/Ellipsoid',
-        '../../Core/computeSunPosition',
-        '../../Core/EventHandler',
-        '../../Core/FeatureDetection',
-        '../../Core/MouseEventType',
-        '../../Core/Cartesian2',
-        '../../Core/Cartesian3',
-        '../../Core/JulianDate',
-        '../../Core/DefaultProxy',
-        '../../Core/requestAnimationFrame',
-        '../../Scene/Scene',
-        '../../Scene/CentralBody',
-        '../../Scene/BingMapsTileProvider',
-        '../../Scene/BingMapsStyle',
-        '../../Scene/SingleTileProvider',
-        '../../Scene/PerformanceDisplay',
-        'dojo/text!./CesiumWidget.html'
+        '../../Helpers/BasicGlobe'
     ], function (
         require,
         declare,
@@ -35,47 +18,30 @@ define([
         on,
         _WidgetBase,
         _TemplatedMixin,
-        BoundingRectangle,
-        Ellipsoid,
-        computeSunPosition,
-        EventHandler,
-        FeatureDetection,
-        MouseEventType,
-        Cartesian2,
-        Cartesian3,
-        JulianDate,
-        DefaultProxy,
-        requestAnimationFrame,
-        Scene,
-        CentralBody,
-        BingMapsTileProvider,
-        BingMapsStyle,
-        SingleTileProvider,
-        PerformanceDisplay,
-        template) {
+        BasicGlobe) {
     "use strict";
 
     return declare('Cesium.CesiumWidget', [_WidgetBase, _TemplatedMixin], {
-        templateString : template,
-        useStreamingImagery : true,
-        mapStyle : BingMapsStyle.AERIAL,
-        defaultCamera : undefined,
-        dayImageUrl : undefined,
-        nightImageUrl : undefined,
-        specularMapUrl : undefined,
-        cloudsMapUrl : undefined,
-        bumpMapUrl : undefined,
-        resizeWidgetOnWindowResize : true,
+        templateString : '<div data-dojo-attach-point="parentNode" style="width: 100%; height: 100%;"></div>',
+        //useStreamingImagery : true,
+        //mapStyle : BingMapsStyle.AERIAL,
+        //defaultCamera : undefined,
+        //dayImageUrl : undefined,
+        //nightImageUrl : undefined,
+        //specularMapUrl : undefined,
+        //cloudsMapUrl : undefined,
+        //bumpMapUrl : undefined,
+        //resizeWidgetOnWindowResize : true,
 
         constructor : function() {
-            this.ellipsoid = Ellipsoid.WGS84;
+            //this.ellipsoid = Ellipsoid.WGS84;
         },
 
         postCreate : function() {
             ready(this, '_setupCesium');
         },
 
-        postSetup : undefined,
+/*        postSetup : undefined,
 
         onSetupError : function(widget, error) {
             console.error(error);
@@ -170,10 +136,12 @@ define([
             if (typeof this.onZoom !== 'undefined') {
                 this.onZoom(e);
             }
-        },
+        },*/
 
         _setupCesium : function() {
-            var canvas = this.canvas, ellipsoid = this.ellipsoid, scene, widget = this;
+            BasicGlobe.createOnWidget(this, this.parentNode);
+
+/*            var canvas = this.canvas, ellipsoid = this.ellipsoid, scene, widget = this;
 
             try {
                 scene = this.scene = new Scene(canvas);
@@ -238,9 +206,10 @@ define([
             }
 
             this.defaultCamera = camera.clone();
-        },
+            */
+        }
 
-        viewHome : function() {
+/*,        viewHome : function() {
             var camera = this.scene.getCamera();
             camera.position = this.defaultCamera.position;
             camera.direction = this.defaultCamera.direction;
@@ -348,5 +317,6 @@ define([
             }
             updateAndRender();
         }
+    */
     });
 });

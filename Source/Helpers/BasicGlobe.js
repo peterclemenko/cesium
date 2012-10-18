@@ -66,6 +66,26 @@ define([
         this._setupCesium();
     };
 
+    // Static constructor for other frameworks like Dojo.
+    BasicGlobe.createOnWidget = function(externalWidget, parentNode) {
+        for (var opt in BasicGlobe.prototype) {
+            if (BasicGlobe.prototype.hasOwnProperty(opt) && !externalWidget.hasOwnProperty(opt)) {
+                externalWidget[opt] = BasicGlobe.prototype[opt];
+            }
+        }
+
+        // TODO: Make these not step on user-set options.  Share defaults with above.  BasicGlobe.prototype._fillInDefaultValues()
+        externalWidget.parentNode = parentNode;
+        externalWidget.imageBase = '../../../Images/';
+        externalWidget.useStreamingImagery = true;
+        externalWidget.mapStyle = BingMapsStyle.AERIAL;
+        externalWidget.resizeCanvasOnWindowResize = true;
+        externalWidget._sunPosition = new Cartesian3();
+
+        externalWidget._createNodes(parentNode);
+        externalWidget._setupCesium();
+    };
+
     BasicGlobe.prototype.onSetupError = function(widget, error) {
         console.error(error);
     };
