@@ -79,6 +79,7 @@ require({
             var ele = document.createElement('span');
             ele.className = className;
             ele.textContent = message + "\n";
+console.log('appendConsole: ' + message);
             logOutput.appendChild(ele);
             logOutput.parentNode.scrollTop = logOutput.clientHeight + 8 - logOutput.parentNode.clientHeight;
             hideGallery();
