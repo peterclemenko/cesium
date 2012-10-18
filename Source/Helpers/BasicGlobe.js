@@ -45,8 +45,8 @@ define([
      * @alias BasicGlobe
      * @constructor
      */
-    var BasicGlobe = function(canvas, options) {
-        this.canvas = canvas;
+    var BasicGlobe = function(parentNode, options) {
+        this.parentNode = parentNode;
         this.imageBase = 'Images/';
         this.useStreamingImagery = true;
         this.mapStyle = BingMapsStyle.AERIAL;
@@ -62,12 +62,30 @@ define([
             }
         }
 
-        // **** TODO: ADD CESIUM LOGO from the CesiumWidget.html template. ****
+        this._createNodes(parentNode);
         this._setupCesium();
     };
 
     BasicGlobe.prototype.onSetupError = function(widget, error) {
         console.error(error);
+    };
+
+    BasicGlobe.prototype._createNodes = function(parentNode) {
+        this.containerNode = document.createElement('div');
+        this.containerNode.style.cssText = 'width: 100%; height: 100%;';
+
+        this.cesiumLogo = document.createElement('a');
+        this.cesiumLogo.href = 'http://cesium.agi.com/';
+        this.cesiumLogo.target = '_blank';
+        this.cesiumLogo.style.cssText = 'display: block; position: absolute; bottom: 4px; left: 0; text-decoration: none; ' +
+            'background-image: url(' + this.imageBase + 'Cesium_Logo_overlay.png); width: 118px; height: 26px;';
+
+        this.canvas = document.createElement('canvas');
+        this.canvas.style.cssText = 'width: 100%; height: 100%;';
+
+        this.containerNode.appendChild(this.cesiumLogo);
+        this.containerNode.appendChild(this.canvas);
+        parentNode.appendChild(this.containerNode);
     };
 
     BasicGlobe.prototype.resize = function() {
