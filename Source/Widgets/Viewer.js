@@ -41,16 +41,14 @@ define([
     "use strict";
 
     /**
-     * This constructs a simple Cesium scene with the Earth.
+     * This viewer constructs a Cesium scene with the Earth.
      * @alias Viewer
      * @constructor
+     * @param {DOM Node} parentNode - The parent HTML element for the widget will typically be a <code>div</code> explicitly specifying placement on the page.
+     * @param {Object} options - A list of options to pre-configure the widget.  Names matching member fields/functions will override the default values.
      */
     var Viewer = function(parentNode, options) {
         this.parentNode = parentNode;
-        this.imageBase = 'Images/';
-        this.useStreamingImagery = true;
-        this.mapStyle = BingMapsStyle.AERIAL;
-        this.resizeCanvasOnWindowResize = true;
         this._sunPosition = new Cartesian3();
 
         // Copy all options to this.
@@ -68,26 +66,17 @@ define([
 
     // Static constructor for other frameworks like Dojo.
     Viewer.createOnWidget = function(externalWidget, parentNode) {
+        externalWidget.parentNode = parentNode;
+        externalWidget._sunPosition = new Cartesian3();
+
         for (var opt in Viewer.prototype) {
             if (Viewer.prototype.hasOwnProperty(opt) && !externalWidget.hasOwnProperty(opt)) {
                 externalWidget[opt] = Viewer.prototype[opt];
             }
         }
 
-        // TODO: Make these not step on user-set options.  Share defaults with above.  Viewer.prototype._fillInDefaultValues()
-        externalWidget.parentNode = parentNode;
-        externalWidget.imageBase = '../../../Images/';
-        externalWidget.useStreamingImagery = true;
-        externalWidget.mapStyle = BingMapsStyle.AERIAL;
-        externalWidget.resizeCanvasOnWindowResize = true;
-        externalWidget._sunPosition = new Cartesian3();
-
         externalWidget._createNodes(parentNode);
         externalWidget._setupCesium();
-    };
-
-    Viewer.prototype.onSetupError = function(widget, error) {
-        console.error(error);
     };
 
     Viewer.prototype._createNodes = function(parentNode) {
@@ -108,6 +97,76 @@ define([
         parentNode.appendChild(this.containerNode);
     };
 
+    /**
+     * Path to included images, so widget can find things like night textures and specular maps.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     * @default '../../../Images/'
+     */
+    Viewer.prototype.imageBase = '../../../Images/';
+
+    /**
+     * Enable streaming Imagery.  This is read-only after construction.
+     *
+     * @type {Boolean}
+     * @memberof Viewer.prototype
+     * @default true
+     * @see Viewert#enableStreamingImagery
+     */
+    Viewer.prototype.useStreamingImagery = true;
+
+    /**
+     * The map style for streaming imagery.  This is read-only after construction.
+     *
+     * @type {BingMapsStyle}
+     * @memberof Viewer.prototype
+     * @default {@link BingMapsStyle.AERIAL}
+     * @see Viewer#setStreamingImageryMapStyle
+     */
+    Viewer.prototype.mapStyle = BingMapsStyle.AERIAL;
+
+    /**
+     * Register this widget's resize handler to get called every time the browser window
+     * resize event fires.  This is read-only after construction.  Generally this should
+     * be true for full-screen widgets, and true for
+     * fluid layouts where the widget is likely to change size at the same time as the
+     * window.  The exception is, if you use a Dojo layout where this widget exists inside
+     * a Dojo ContentPane or similar, you should set this to false, because Dojo will perform
+     * its own layout calculations and call this widget's resize handler automatically.
+     * This can also be false for a fixed-size widget.
+     *
+     * If unsure, test the widget with this set to false, and if window resizes cause the
+     * globe to stretch, change this to true.
+     *
+     * @type {Boolean}
+     * @memberof Viewer.prototype
+     * @default true
+     * @see Viewer#resize
+     */
+    Viewer.prototype.resizeWidgetOnWindowResize = true;
+
+    /**
+     * This function will get a callback in the event of setup failure, likely indicating
+     * a problem with WebGL support or the availability of a GL context.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} widget - A reference to this widget
+     * @param {Object} error - The exception that was thrown during setup
+     */
+    Viewer.prototype.onSetupError = function(widget, error) {
+        console.error(error);
+    };
+
+    /**
+     * This function must be called when the widget changes size.  It updates the canvas
+     * size, camera aspect ratio, and viewport size.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @see Viewer#resizeWidgetOnWindowResize
+     */
     Viewer.prototype.resize = function() {
         var width = this.canvas.clientWidth, height = this.canvas.clientHeight;
 
@@ -246,7 +305,7 @@ define([
         handler.setMouseAction(function(e) { widget._handleRightDown(e); }, MouseEventType.RIGHT_DOWN);
         handler.setMouseAction(function(e) { widget._handleRightUp(e); }, MouseEventType.RIGHT_UP);
 
-        if (widget.resizeCanvasOnWindowResize) {
+        if (widget.resizeWidgetOnWindowResize) {
             window.addEventListener('resize', function() {
                 widget.resize();
             }, false);
@@ -259,6 +318,11 @@ define([
         this.defaultCamera = camera.clone();
     },
 
+    /**
+     * Reset the camera to the home view for the current scene mode.
+     * @function
+     * @memberof Viewer.prototype
+     */
     Viewer.prototype.viewHome = function() {
         var camera = this.scene.getCamera();
         camera.position = this.defaultCamera.position;
@@ -272,10 +336,24 @@ define([
         this.centralBodyCameraController = controllers.addCentralBody();
     };
 
+    /**
+     * Test if the clouds are configured and available for display.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @returns {Boolean} <code>true</code> if the <code>cloudsMapSource</code> is defined.
+     */
     Viewer.prototype.areCloudsAvailable = function() {
         return typeof this.centralBody.cloudsMapSource !== 'undefined';
     };
 
+    /**
+     * Enable or disable the display of clouds.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Boolean} useClouds - <code>true</code> to enable clouds, if configured.
+     */
     Viewer.prototype.enableClouds = function(useClouds) {
         if (this.areCloudsAvailable()) {
             this.centralBody.showClouds = useClouds;
@@ -283,6 +361,13 @@ define([
         }
     };
 
+    /**
+     * Enable or disable the FPS (Frames Per Second) perfomance display.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Boolean} showStatistics - <code>true</code> to enable it.
+     */
     Viewer.prototype.enableStatistics = function(showStatistics) {
         if (typeof this._performanceDisplay === 'undefined' && showStatistics) {
             this._performanceDisplay = new PerformanceDisplay();
@@ -293,19 +378,51 @@ define([
         }
     };
 
+    /**
+     * Enable or disable the "sky atmosphere" effect, which displays the limb
+     * of the Earth (seen from space) or blue sky (seen from inside the atmosphere).
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Boolean} show - <code>true</code> to enable the effect.
+     */
     Viewer.prototype.showSkyAtmosphere = function(show) {
         this.centralBody.showSkyAtmosphere = show;
     };
 
+    /**
+     * Enable or disable the "ground atmosphere" effect, which makes the surface of
+     * the globe look pale at a distance.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Boolean} show - <code>true</code> to enable the effect.
+     */
     Viewer.prototype.showGroundAtmosphere = function(show) {
         this.centralBody.showGroundAtmosphere = show;
     };
 
+    /**
+     * Enable or disable streaming imagery, and update the globe.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Boolean} value - <code>true</code> to enable streaming imagery.
+     * @see Viewer#useStreamingImagery
+     */
     Viewer.prototype.enableStreamingImagery = function(value) {
         this.useStreamingImagery = value;
         this._configureCentralBodyImagery();
     };
 
+    /**
+     * Change the streaming imagery type, and update the globe.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {BingMapsStyle} value - the new map style to use.
+     * @see Viewer#mapStyle
+     */
     Viewer.prototype.setStreamingImageryMapStyle = function(value) {
         this.useStreamingImagery = true;
 
@@ -315,6 +432,14 @@ define([
         }
     };
 
+    /**
+     * Set the positional offset of the logo of the streaming imagery provider.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Integer} logoOffsetX - The horizontal offset in screen space
+     * @param {Integer} logoOffsetY - The vertical offset in screen space
+     */
     Viewer.prototype.setLogoOffset = function(logoOffsetX, logoOffsetY) {
         var logoOffset = this.centralBody.logoOffset;
         if ((logoOffsetX !== logoOffset.x) || (logoOffsetY !== logoOffset.y)) {
@@ -322,10 +447,23 @@ define([
         }
     };
 
+    /**
+     * Call this function prior to rendering each animation frame, to prepare
+     * all CZML objects and other settings for the next frame.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {JulianDate} currentTime - The date and time in the scene of the frame to be rendered
+     */
     Viewer.prototype.update = function(currentTime) {
         this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
     };
 
+    /**
+     * Render the widget's scene.
+     * @function
+     * @memberof Viewer.prototype
+     */
     Viewer.prototype.render = function() {
         this.scene.render();
     };
@@ -351,11 +489,55 @@ define([
         centralBody.bumpMapSource = this.bumpMapUrl;
     };
 
+    /**
+     * This is a simple render loop that can be started if there is only one <code>Viewer</code> widget
+     * on your page.  If you wish to
+     * customize your render loop, avoid this function and instead use code similar to the following example.
+     * @function
+     * @memberof Viewer.prototype
+     * @see requestAnimationFrame
+     * @example
+     * // This takes the place of startRenderLoop for a single widget.
+     *
+     * var animationController = widget.animationController;
+     * function updateAndRender() {
+     *     var currentTime = animationController.update();
+     *     widget.update(currentTime);
+     *     widget.render();
+     *     requestAnimationFrame(updateAndRender);
+     * }
+     * updateAndRender();
+     * @example
+     * // This example requires widget1 and widget2 to share an animationController
+     * // (for example, widget2's constructor was called with a copy of widget1's
+     * // animationController).
+     *
+     * function updateAndRender() {
+     *     var currentTime = animationController.update();
+     *     widget1.update(currentTime);
+     *     widget2.update(currentTime);
+     *     widget1.render();
+     *     widget2.render();
+     *     requestAnimationFrame(updateAndRender);
+     * }
+     * updateAndRender();
+     * @example
+     * // This example uses separate animationControllers for widget1 and widget2.
+     * // These widgets can animate at different rates and pause individually.
+     *
+     * function updateAndRender() {
+     *     var currentTime = widget1.animationController.update();
+     *     widget1.update(currentTime);
+     *     widget1.render();
+     *     currentTime = widget2.animationController.update();
+     *     widget2.update(currentTime);
+     *     widget2.render();
+     *     requestAnimationFrame(updateAndRender);
+     * }
+     * updateAndRender();
+     */
     Viewer.prototype.startRenderLoop = function() {
         var widget = this;
-
-        // Note that clients are permitted to use their own custom render loop.
-        // At a minimum it should include lines similar to the following:
 
         function updateAndRender() {
             var currentTime = new JulianDate();
