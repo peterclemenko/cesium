@@ -42,10 +42,10 @@ define([
 
     /**
      * This constructs a simple Cesium scene with the Earth.
-     * @alias BasicGlobe
+     * @alias Viewer
      * @constructor
      */
-    var BasicGlobe = function(parentNode, options) {
+    var Viewer = function(parentNode, options) {
         this.parentNode = parentNode;
         this.imageBase = 'Images/';
         this.useStreamingImagery = true;
@@ -67,14 +67,14 @@ define([
     };
 
     // Static constructor for other frameworks like Dojo.
-    BasicGlobe.createOnWidget = function(externalWidget, parentNode) {
-        for (var opt in BasicGlobe.prototype) {
-            if (BasicGlobe.prototype.hasOwnProperty(opt) && !externalWidget.hasOwnProperty(opt)) {
-                externalWidget[opt] = BasicGlobe.prototype[opt];
+    Viewer.createOnWidget = function(externalWidget, parentNode) {
+        for (var opt in Viewer.prototype) {
+            if (Viewer.prototype.hasOwnProperty(opt) && !externalWidget.hasOwnProperty(opt)) {
+                externalWidget[opt] = Viewer.prototype[opt];
             }
         }
 
-        // TODO: Make these not step on user-set options.  Share defaults with above.  BasicGlobe.prototype._fillInDefaultValues()
+        // TODO: Make these not step on user-set options.  Share defaults with above.  Viewer.prototype._fillInDefaultValues()
         externalWidget.parentNode = parentNode;
         externalWidget.imageBase = '../../../Images/';
         externalWidget.useStreamingImagery = true;
@@ -86,11 +86,11 @@ define([
         externalWidget._setupCesium();
     };
 
-    BasicGlobe.prototype.onSetupError = function(widget, error) {
+    Viewer.prototype.onSetupError = function(widget, error) {
         console.error(error);
     };
 
-    BasicGlobe.prototype._createNodes = function(parentNode) {
+    Viewer.prototype._createNodes = function(parentNode) {
         this.containerNode = document.createElement('div');
         this.containerNode.style.cssText = 'width: 100%; height: 100%;';
 
@@ -108,7 +108,7 @@ define([
         parentNode.appendChild(this.containerNode);
     };
 
-    BasicGlobe.prototype.resize = function() {
+    Viewer.prototype.resize = function() {
         var width = this.canvas.clientWidth, height = this.canvas.clientHeight;
 
         if (typeof this.scene === 'undefined' || (this.canvas.width === width && this.canvas.height === height)) {
@@ -120,7 +120,7 @@ define([
         this.scene.getCamera().frustum.aspectRatio = width / height;
     };
 
-    BasicGlobe.prototype._handleLeftClick = function(e) {
+    Viewer.prototype._handleLeftClick = function(e) {
         if (typeof this.onObjectSelected !== 'undefined') {
             // If the user left-clicks, we re-send the selection event, regardless if it's a duplicate,
             // because the client may want to react to re-selection in some way.
@@ -129,7 +129,7 @@ define([
         }
     };
 
-    BasicGlobe.prototype._handleRightClick = function(e) {
+    Viewer.prototype._handleRightClick = function(e) {
         if (typeof this.onObjectRightClickSelected !== 'undefined') {
             // If the user right-clicks, we re-send the selection event, regardless if it's a duplicate,
             // because the client may want to react to re-selection in some way.
@@ -138,7 +138,7 @@ define([
         }
     };
 
-    BasicGlobe.prototype._handleMouseMove = function(movement) {
+    Viewer.prototype._handleMouseMove = function(movement) {
         if (typeof this.onObjectMousedOver !== 'undefined') {
             // Don't fire multiple times for the same object as the mouse travels around the screen.
             var mousedOverObject = this.scene.pick(movement.endPosition);
@@ -154,41 +154,41 @@ define([
         }
     };
 
-    BasicGlobe.prototype._handleRightDown = function(e) {
+    Viewer.prototype._handleRightDown = function(e) {
         this.rightDown = true;
         if (typeof this.onRightMouseDown !== 'undefined') {
             this.onRightMouseDown(e);
         }
     };
 
-    BasicGlobe.prototype._handleRightUp = function(e) {
+    Viewer.prototype._handleRightUp = function(e) {
         this.rightDown = false;
         if (typeof this.onRightMouseUp !== 'undefined') {
             this.onRightMouseUp(e);
         }
     };
 
-    BasicGlobe.prototype._handleLeftDown = function(e) {
+    Viewer.prototype._handleLeftDown = function(e) {
         this.leftDown = true;
         if (typeof this.onLeftMouseDown !== 'undefined') {
             this.onLeftMouseDown(e);
         }
     };
 
-    BasicGlobe.prototype._handleLeftUp = function(e) {
+    Viewer.prototype._handleLeftUp = function(e) {
         this.leftDown = false;
         if (typeof this.onLeftMouseUp !== 'undefined') {
             this.onLeftMouseUp(e);
         }
     };
 
-    BasicGlobe.prototype._handleWheel = function(e) {
+    Viewer.prototype._handleWheel = function(e) {
         if (typeof this.onZoom !== 'undefined') {
             this.onZoom(e);
         }
     };
 
-    BasicGlobe.prototype._setupCesium = function() {
+    Viewer.prototype._setupCesium = function() {
         this.ellipsoid = Ellipsoid.WGS84;
 
         var canvas = this.canvas, ellipsoid = this.ellipsoid, scene, widget = this;
@@ -259,7 +259,7 @@ define([
         this.defaultCamera = camera.clone();
     },
 
-    BasicGlobe.prototype.viewHome = function() {
+    Viewer.prototype.viewHome = function() {
         var camera = this.scene.getCamera();
         camera.position = this.defaultCamera.position;
         camera.direction = this.defaultCamera.direction;
@@ -272,18 +272,18 @@ define([
         this.centralBodyCameraController = controllers.addCentralBody();
     };
 
-    BasicGlobe.prototype.areCloudsAvailable = function() {
+    Viewer.prototype.areCloudsAvailable = function() {
         return typeof this.centralBody.cloudsMapSource !== 'undefined';
     };
 
-    BasicGlobe.prototype.enableClouds = function(useClouds) {
+    Viewer.prototype.enableClouds = function(useClouds) {
         if (this.areCloudsAvailable()) {
             this.centralBody.showClouds = useClouds;
             this.centralBody.showCloudShadows = useClouds;
         }
     };
 
-    BasicGlobe.prototype.enableStatistics = function(showStatistics) {
+    Viewer.prototype.enableStatistics = function(showStatistics) {
         if (typeof this._performanceDisplay === 'undefined' && showStatistics) {
             this._performanceDisplay = new PerformanceDisplay();
             this.scene.getPrimitives().add(this._performanceDisplay);
@@ -293,20 +293,20 @@ define([
         }
     };
 
-    BasicGlobe.prototype.showSkyAtmosphere = function(show) {
+    Viewer.prototype.showSkyAtmosphere = function(show) {
         this.centralBody.showSkyAtmosphere = show;
     };
 
-    BasicGlobe.prototype.showGroundAtmosphere = function(show) {
+    Viewer.prototype.showGroundAtmosphere = function(show) {
         this.centralBody.showGroundAtmosphere = show;
     };
 
-    BasicGlobe.prototype.enableStreamingImagery = function(value) {
+    Viewer.prototype.enableStreamingImagery = function(value) {
         this.useStreamingImagery = value;
         this._configureCentralBodyImagery();
     };
 
-    BasicGlobe.prototype.setStreamingImageryMapStyle = function(value) {
+    Viewer.prototype.setStreamingImageryMapStyle = function(value) {
         this.useStreamingImagery = true;
 
         if (this.mapStyle !== value) {
@@ -315,22 +315,22 @@ define([
         }
     };
 
-    BasicGlobe.prototype.setLogoOffset = function(logoOffsetX, logoOffsetY) {
+    Viewer.prototype.setLogoOffset = function(logoOffsetX, logoOffsetY) {
         var logoOffset = this.centralBody.logoOffset;
         if ((logoOffsetX !== logoOffset.x) || (logoOffsetY !== logoOffset.y)) {
             this.centralBody.logoOffset = new Cartesian2(logoOffsetX, logoOffsetY);
         }
     };
 
-    BasicGlobe.prototype.update = function(currentTime) {
+    Viewer.prototype.update = function(currentTime) {
         this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
     };
 
-    BasicGlobe.prototype.render = function() {
+    Viewer.prototype.render = function() {
         this.scene.render();
     };
 
-    BasicGlobe.prototype._configureCentralBodyImagery = function() {
+    Viewer.prototype._configureCentralBodyImagery = function() {
         var centralBody = this.centralBody;
 
         if (this.useStreamingImagery) {
@@ -351,7 +351,7 @@ define([
         centralBody.bumpMapSource = this.bumpMapUrl;
     };
 
-    BasicGlobe.prototype.startRenderLoop = function() {
+    Viewer.prototype.startRenderLoop = function() {
         var widget = this;
 
         // Note that clients are permitted to use their own custom render loop.
@@ -366,5 +366,5 @@ define([
         updateAndRender();
     };
 
-    return BasicGlobe;
+    return Viewer;
 });

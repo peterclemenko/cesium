@@ -51,11 +51,11 @@
 
     var parentNode = document.getElementById('cesiumContainer');
 
-    var basicGlobe = new Cesium.BasicGlobe(parentNode, {
+    var viewer = new Cesium.Viewer(parentNode, {
         imageBase : '../../../Images/'
     });
 
-    basicGlobe.startRenderLoop();
+    viewer.startRenderLoop();
 
     document.getElementById('toolbar').innerHTML = '';
 }());

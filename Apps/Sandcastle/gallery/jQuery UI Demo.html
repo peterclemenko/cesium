@@ -60,15 +60,15 @@
 
     var parentNode = $('#cesiumContainer')[0];
 
-    var basicGlobe = new Cesium.BasicGlobe(parentNode, {
+    var viewer = new Cesium.Viewer(parentNode, {
         imageBase : '../../../Images/'
     });
 
-    basicGlobe.startRenderLoop();
+    viewer.startRenderLoop();
 
-    var cb = basicGlobe.centralBody;
+    var cb = viewer.centralBody;
     // TODO change this once basicGlobe has its own transitioner.
-    var transitioner = new Cesium.SceneTransitioner(basicGlobe.scene);
+    var transitioner = new Cesium.SceneTransitioner(viewer.scene);
 
     // Create toolbar template
     $('#toolbar').html(
