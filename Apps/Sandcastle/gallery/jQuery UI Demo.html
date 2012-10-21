@@ -58,52 +58,17 @@
 (function () {
     "use strict";
 
-    // Create canvas element using jQuery:
-    $('<canvas/>', {
-        'id': 'glCanvas',
-        'class': 'fullSize'
-    }).appendTo('#cesiumContainer');
+    var parentNode = $('#cesiumContainer')[0];
 
-    var canvas = $('#glCanvas')[0];
-    var ellipsoid = Cesium.Ellipsoid.WGS84;
-    var scene = new Cesium.Scene(canvas);
-    var primitives = scene.getPrimitives();
-
-    // Bing Maps
-    var bing = new Cesium.BingMapsTileProvider({
-        server : 'dev.virtualearth.net',
-        mapStyle : Cesium.BingMapsStyle.AERIAL,
-        // Some versions of Safari support WebGL, but don't correctly implement
-        // cross-origin image loading, so we need to load Bing imagery using a proxy.
-        proxy : Cesium.FeatureDetection.supportsCrossOriginImagery() ? undefined : new Cesium.DefaultProxy('/proxy/')
+    var basicGlobe = new Cesium.BasicGlobe(parentNode, {
+        imageBase : '../../../Images/'
     });
 
-    var cb = new Cesium.CentralBody(ellipsoid);
-    cb.dayTileProvider = bing;
-    cb.nightImageSource = '../../../Images/land_ocean_ice_lights_2048.jpg';
-    cb.specularMapSource = '../../../Images/earthspec1k.jpg';
-    if (scene.getContext().getMaximumTextureSize() > 2048) {
-        cb.cloudsMapSource = '../../../Images/earthcloudmaptrans.jpg';
-        cb.bumpMapSource = '../../../Images/earthbump1k.jpg';
-    }
-    cb.showSkyAtmosphere = true;
-    cb.showGroundAtmosphere = true;
-    primitives.setCentralBody(cb);
+    basicGlobe.startRenderLoop();
 
-    scene.getCamera().frustum.near = 1.0;
-    scene.getCamera().getControllers().addCentralBody();
-
-    var transitioner = new Cesium.SceneTransitioner(scene, ellipsoid);
-
-    scene.setAnimation(function() {
-        scene.setSunPosition(Cesium.computeSunPosition(new Cesium.JulianDate()));
-    });
-
-    function tick() {
-        scene.render();
-        Cesium.requestAnimationFrame(tick);
-    }
-    tick();
+    var cb = basicGlobe.centralBody;
+    // TODO change this once basicGlobe has its own transitioner.
+    var transitioner = new Cesium.SceneTransitioner(basicGlobe.scene);
 
     // Create toolbar template
     $('#toolbar').html(
@@ -141,29 +106,6 @@
         cb.showGroundAtmosphere = false;
         transitioner.morphTo2D();
     });
-
-    // Prevent right-click from opening a context menu.
-    canvas.oncontextmenu = function() {
-        return false;
-    };
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Example resize handler
-
-    var onResize = function() {
-        var width = canvas.clientWidth;
-        var height = canvas.clientHeight;
-
-        if (canvas.width === width && canvas.height === height) {
-            return;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        scene.getCamera().frustum.aspectRatio = width / height;
-    };
-    window.addEventListener('resize', onResize, false);
-    onResize();
 
     // Just for fun
     $('#dialog').text('Try moving and closing this dialog, ' +
