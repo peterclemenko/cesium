@@ -10,6 +10,7 @@
 				<sourcefiles dir="${sourceDirectory}">
 					<include name="**/*.js" />
 					<exclude name="Widgets/**" />
+					<include name="Widgets/Viewer.js" />
 					<exclude name="Cesium.js" />
 					<exclude name="main.js" />
 					<exclude name="**/*.profile.js" />

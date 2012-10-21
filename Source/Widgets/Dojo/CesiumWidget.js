@@ -5,14 +5,14 @@ define([
         'dojo/ready',
         'dijit/_WidgetBase',
         'dijit/_TemplatedMixin',
-        '../../Helpers/BasicGlobe'
+        '../Viewer'
     ], function (
         require,
         declare,
         ready,
         _WidgetBase,
         _TemplatedMixin,
-        BasicGlobe) {
+        Viewer) {
     "use strict";
 
     return declare('Cesium.CesiumWidget', [_WidgetBase, _TemplatedMixin], {
@@ -23,7 +23,7 @@ define([
         },
 
         _setupCesium : function() {
-            BasicGlobe.createOnWidget(this, this.parentNode);
+            Viewer.createOnWidget(this, this.parentNode);
         }
     });
 });
