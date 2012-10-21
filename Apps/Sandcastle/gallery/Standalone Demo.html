@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">  <!-- Use Chrome Frame in IE -->
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
-    <meta name="description" content="A test of the BasicGlobe helper.">
+    <meta name="description" content="An example using only the built version of Cesium.">
     <title>Cesium Demo</title>
     <script type="text/javascript" src="../Sandcastle-header.js"></script>
     <script type="text/javascript" src="../../../Build/CesiumUnminified.js"></script>
@@ -43,6 +43,9 @@
 <div id="cesiumContainer" class="fullSize"></div>
 <div id="toolbar">Loading...</div>
 <script id="cesium_sandcastle_script">
+// This example avoids using require.js, and instead pulls in
+// the built version of Cesium.js.
+
 (function () {
     "use strict";
 
