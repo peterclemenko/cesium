@@ -721,7 +721,13 @@ define([
         }
 
         if (this.enableDragDrop) {
-            // TODO: Implement
+            var dropBox = this.parentNode;
+            // The third parameter "useCapture" is true to catch drops on any sub-widget.
+            dropBox.addEventListener('drop', function (e) { widget.handleDrop(e); }, true);
+            // I don't think these are needed here.
+            //on(dropBox, 'dragenter', event.stop);
+            //on(dropBox, 'dragover', event.stop);
+            //on(dropBox, 'dragexit', event.stop);
         }
 
         var currentTime = new JulianDate();
