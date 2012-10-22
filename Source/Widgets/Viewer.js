@@ -2,7 +2,14 @@
 define([
     '../Core/DeveloperError',
     '../Core/BoundingRectangle',
+    '../Core/Clock',
+    '../Core/ClockStep',
+    '../Core/ClockRange',
+    '../Core/Extent',
+    '../Core/AnimationController',
     '../Core/Ellipsoid',
+    '../Core/Iso8601',
+    '../Core/FullScreen',
     '../Core/computeSunPosition',
     '../Core/EventHandler',
     '../Core/FeatureDetection',
@@ -11,17 +18,36 @@ define([
     '../Core/Cartesian3',
     '../Core/JulianDate',
     '../Core/DefaultProxy',
+    '../Core/Transforms',
     '../Core/requestAnimationFrame',
+    '../Core/Color',
+    '../Core/Matrix4',
+    '../Core/Math',
+    '../Scene/PerspectiveFrustum',
+    '../Scene/Material',
     '../Scene/Scene',
     '../Scene/CentralBody',
     '../Scene/BingMapsTileProvider',
     '../Scene/BingMapsStyle',
+    '../Scene/SceneTransitioner',
     '../Scene/SingleTileProvider',
-    '../Scene/PerformanceDisplay'
+    '../Scene/PerformanceDisplay',
+    '../Scene/SceneMode',
+    '../DynamicScene/processCzml',
+    '../DynamicScene/DynamicObjectView',
+    '../DynamicScene/DynamicObjectCollection',
+    '../DynamicScene/VisualizerCollection'
 ], function(
     DeveloperError,
     BoundingRectangle,
+    Clock,
+    ClockStep,
+    ClockRange,
+    Extent,
+    AnimationController,
     Ellipsoid,
+    Iso8601,
+    FullScreen,
     computeSunPosition,
     EventHandler,
     FeatureDetection,
@@ -30,13 +56,25 @@ define([
     Cartesian3,
     JulianDate,
     DefaultProxy,
+    Transforms,
     requestAnimationFrame,
+    Color,
+    Matrix4,
+    CesiumMath,
+    PerspectiveFrustum,
+    Material,
     Scene,
     CentralBody,
     BingMapsTileProvider,
     BingMapsStyle,
+    SceneTransitioner,
     SingleTileProvider,
-    PerformanceDisplay
+    PerformanceDisplay,
+    SceneMode,
+    processCzml,
+    DynamicObjectView,
+    DynamicObjectCollection,
+    VisualizerCollection
 ) {
     "use strict";
 
@@ -107,6 +145,15 @@ define([
     Viewer.prototype.imageBase = '../../../Images/';
 
     /**
+     * Ellipsoid to use.
+     *
+     * @type {Ellipsoid}
+     * @memberof Viewer.prototype
+     * @default Ellipsoid.WGS84
+     */
+    Viewer.prototype.ellipsoid = Ellipsoid.WGS84;
+
+    /**
      * Enable streaming Imagery.  This is read-only after construction.
      *
      * @type {Boolean}
@@ -125,6 +172,84 @@ define([
      * @see Viewer#setStreamingImageryMapStyle
      */
     Viewer.prototype.mapStyle = BingMapsStyle.AERIAL;
+    /**
+     * The URL for a daytime image on the globe.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.dayImageUrl = undefined;
+    /**
+     * The URL for a nighttime image on the globe.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.nightImageUrl = undefined;
+    /**
+     * The URL for a specular map on the globe, typically with white for oceans and black for landmass.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.specularMapUrl = undefined;
+    /**
+     * The URL for the clouds image on the globe.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.cloudsMapUrl = undefined;
+    /**
+     * The URL for a bump map on the globe, showing mountain ranges.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.bumpMapUrl = undefined;
+    /**
+     * An object containing settings supplied by the end user, typically from the query string
+     * of the URL of the page with the widget.
+     *
+     * @type {Object}
+     * @memberof Viewer.prototype
+     * @example
+     * var ioQuery = require('dojo/io-query');
+     * var endUserOptions = {};
+     * if (window.location.search) {
+     *     endUserOptions = ioQuery.queryToObject(window.location.search.substring(1));
+     * }
+     *
+     * @example
+     * var endUserOptions = {
+     *     'source' : 'file.czml', // The relative URL of the CZML file to load at startup.
+     *     'lookAt' : '123abc',    // The CZML ID of the object to track at startup.
+     *     'stats'  : 1,           // Enable the FPS performance display.
+     *     'debug'  : 1,           // Full WebGL error reporting at substantial performance cost.
+     * };
+     */
+    Viewer.prototype.endUserOptions = {};
+    /**
+     * Check for WebGL errors after every WebGL API call.  Enabling this debugging feature
+     * comes at a substantial performance cost, halting and restarting the graphics
+     * pipeline hundreds of times per frame.  But it can uncover problems that are otherwise
+     * very difficult to diagnose.
+     * This property is read-only after construction.
+     *
+     * @type {Boolean}
+     * @memberof Viewer.prototype
+     * @default false
+     */
+    Viewer.prototype.enableWebGLDebugging = false;
+    /**
+     * Allow the user to drag-and-drop CZML files into this widget.
+     * This is read-only after construction.
+     *
+     * @type {Boolean}
+     * @memberof Viewer.prototype
+     * @default false
+     */
+    Viewer.prototype.enableDragDrop = false;
 
     /**
      * Register this widget's resize handler to get called every time the browser window
@@ -145,6 +270,15 @@ define([
      * @see Viewer#resize
      */
     Viewer.prototype.resizeWidgetOnWindowResize = true;
+
+    /**
+     * If supplied, this function will be called at the end of widget setup.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @see Viewer#startRenderLoop
+     */
+    Viewer.prototype.postSetup = undefined;
 
     /**
      * This function will get a callback in the event of setup failure, likely indicating
@@ -176,8 +310,145 @@ define([
 
         this.canvas.width = width;
         this.canvas.height = height;
-        this.scene.getCamera().frustum.aspectRatio = width / height;
+
+        var frustum = this.scene.getCamera().frustum;
+        if (typeof frustum.aspectRatio !== 'undefined') {
+            frustum.aspectRatio = width / height;
+        } else {
+            frustum.top = frustum.right * (height / width);
+            frustum.bottom = -frustum.top;
+        }
     };
+    /**
+     * Have the camera track a particular object based on the result of a pick.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object to track, or <code>undefined</code> to stop tracking.
+     */
+    Viewer.prototype.centerCameraOnPick = function(selectedObject) {
+        this.centerCameraOnObject(typeof selectedObject !== 'undefined' ? selectedObject.dynamicObject : undefined);
+    };
+
+    Viewer.prototype._viewFromTo = undefined;
+
+    /**
+     * Have the camera track a particular object.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object to track, or <code>undefined</code> to stop tracking.
+     */
+    Viewer.prototype.centerCameraOnObject = function(selectedObject) {
+        if (typeof selectedObject !== 'undefined' && typeof selectedObject.position !== 'undefined') {
+            var viewFromTo = this._viewFromTo;
+            if (typeof viewFromTo === 'undefined') {
+                this._viewFromTo = viewFromTo = new DynamicObjectView(selectedObject, this.scene, this.ellipsoid);
+            } else {
+                viewFromTo.dynamicObject = selectedObject;
+            }
+        } else {
+            this._viewFromTo = undefined;
+
+            var scene = this.scene;
+            var mode = scene.mode;
+            var camera = scene.getCamera();
+            var controllers = camera.getControllers();
+            if (mode === SceneMode.SCENE2D) {
+                controllers.removeAll();
+                controllers.add2D(scene.scene2D.projection);
+            } else if (mode === SceneMode.SCENE3D) {
+                //For now just rename at the last location
+                //camera will stay in spindle/rotate mode.
+            } else if (mode === SceneMode.COLUMBUS_VIEW) {
+                controllers.removeAll();
+                controllers.addColumbusView();
+            }
+        }
+    };
+
+    /**
+     * Override this function to be notified when an object is selected (left-click).
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object that was selected, or <code>undefined</code> to de-select.
+     */
+    Viewer.prototype.onObjectSelected = undefined;
+    /**
+     * Override this function to be notified when an object is right-clicked.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object that was selected, or <code>undefined</code> to de-select.
+     */
+    Viewer.prototype.onObjectRightClickSelected = undefined;
+    /**
+     * Override this function to be notified when an object is left-double-clicked.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object that was selected, or <code>undefined</code> to de-select.
+     */
+    Viewer.prototype.onObjectLeftDoubleClickSelected = undefined;
+    /**
+     * Override this function to be notified when an object hovered by the mouse.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} selectedObject - The object that was hovered, or <code>undefined</code> if the mouse moved off.
+     */
+    Viewer.prototype.onObjectMousedOver = undefined;
+    /**
+     * Override this function to be notified when the left mouse button is pressed down.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the position of the mouse.
+     */
+    Viewer.prototype.onLeftMouseDown = undefined;
+    /**
+     * Override this function to be notified when the left mouse button is released.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the position of the mouse.
+     */
+    Viewer.prototype.onLeftMouseUp = undefined;
+    /**
+     * Override this function to be notified when the right mouse button is pressed down.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the position of the mouse.
+     */
+    Viewer.prototype.onRightMouseDown = undefined;
+    /**
+     * Override this function to be notified when the right mouse button is released.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the position of the mouse.
+     */
+    Viewer.prototype.onRightMouseUp = undefined;
+    /**
+     * Override this function to be notified when the left mouse button is dragged.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the start and end position of the mouse.
+     */
+    Viewer.prototype.onLeftDrag = undefined;
+    /**
+     * Override this function to be notified when the right mouse button is dragged or mouse wheel is zoomed.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} The object with the start and end position of the mouse.
+     */
+    Viewer.prototype.onZoom = undefined;
+
+    Viewer.prototype._camera3D = undefined;
 
     Viewer.prototype._handleLeftClick = function(e) {
         if (typeof this.onObjectSelected !== 'undefined') {
@@ -194,6 +465,15 @@ define([
             // because the client may want to react to re-selection in some way.
             this.selectedObject = this.scene.pick(e.position);
             this.onObjectRightClickSelected(this.selectedObject);
+        }
+    };
+
+    Viewer.prototype._handleLeftDoubleClick = function(e) {
+        if (typeof this.onObjectLeftDoubleClickSelected !== 'undefined') {
+            // Fire the selection event, regardless if it's a duplicate,
+            // because the client may want to react to re-selection in some way.
+            this.selectedObject = this.scene.pick(e.position);
+            this.onObjectLeftDoubleClickSelected(this.selectedObject);
         }
     };
 
@@ -247,9 +527,89 @@ define([
         }
     };
 
-    Viewer.prototype._setupCesium = function() {
-        this.ellipsoid = Ellipsoid.WGS84;
+    /**
+     * Apply the animation settings from a CZML buffer.
+     * @function
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.setTimeFromBuffer = function() {
+        var clock = this.clock;
 
+        this.animReverse.set('checked', false);
+        this.animPause.set('checked', true);
+        this.animPlay.set('checked', false);
+
+        var availability = this.dynamicObjectCollection.computeAvailability();
+        if (availability.start.equals(Iso8601.MINIMUM_VALUE)) {
+            clock.startTime = new JulianDate();
+            clock.stopTime = clock.startTime.addDays(1);
+            clock.clockRange = ClockRange.UNBOUNDED;
+        } else {
+            clock.startTime = availability.start;
+            clock.stopTime = availability.stop;
+            clock.clockRange = ClockRange.LOOP;
+        }
+
+        clock.multiplier = 60;
+        clock.currentTime = clock.startTime;
+        this.timelineControl.zoomTo(clock.startTime, clock.stopTime);
+    };
+
+    /**
+     * Clears all CZML data from the viewer.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     */
+    Viewer.prototype.clearAllCZML = function() {
+        this.centerCameraOnObject(undefined);
+        //CZML_TODO visualizers.removeAllPrimitives(); is not really needed here, but right now visualizers
+        //cache data indefinitely and removeAll is the only way to get rid of it.
+        //while there are no visual differences, removeAll cleans the cache and improves performance
+        this.visualizers.removeAllPrimitives();
+        this.dynamicObjectCollection.clear();
+    };
+
+    /**
+     * Add CZML data to the viewer.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {CZML} czml - The CZML (as objects, not JSON) to be processed and added to the viewer.
+     * @param {string} source - The filename or URI that was the source of the CZML collection.
+     * @param {string} lookAt - Optional.  The ID of the object to center the camera on.
+     */
+    Viewer.prototype.addCZML = function(czml, source, lookAt) {
+        processCzml(czml, this.dynamicObjectCollection, source);
+        this.setTimeFromBuffer();
+        if (typeof lookAt !== 'undefined') {
+            this.centerCameraOnObject(this.dynamicObjectCollection.getObject(lookAt));
+        }
+    };
+
+    /**
+     * This function is called when files are dropped on the widget, if drag-and-drop is enabled.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {Object} event - The drag-and-drop event containing the dropped file(s).
+     */
+    Viewer.prototype.handleDrop = function(event) {
+        event.stopPropagation(); // Stops some browsers from redirecting.
+        event.preventDefault();
+
+        var files = event.dataTransfer.files;
+        var f = files[0];
+        var reader = new FileReader();
+        var widget = this;
+        widget.clearAllCZML();
+        reader.onload = function(evt) {
+            widget.addCZML(JSON.parse(evt.target.result), f.name);
+        };
+        reader.readAsText(f);
+    };
+
+    Viewer.prototype._setupCesium = function() {
         var canvas = this.canvas, ellipsoid = this.ellipsoid, scene, widget = this;
 
         try {
@@ -267,7 +627,19 @@ define([
             return false;
         };
 
-        var maxTextureSize = scene.getContext().getMaximumTextureSize();
+        if (typeof widget.endUserOptions.debug !== 'undefined' && widget.endUserOptions.debug) {
+            this.enableWebGLDebugging = true;
+        }
+
+        var context = scene.getContext();
+        if (this.enableWebGLDebugging) {
+            context.setValidateShaderProgram(true);
+            context.setValidateFramebuffer(true);
+            context.setLogShaderCompilation(true);
+            context.setThrowOnWebGLError(true);
+        }
+
+        var maxTextureSize = context.getMaximumTextureSize();
         if (maxTextureSize < 4095) {
             // Mobile, or low-end card
             this.dayImageUrl = this.dayImageUrl || this.imageBase + 'NE2_50M_SR_W_2048.jpg';
@@ -282,10 +654,11 @@ define([
         }
 
         var centralBody = this.centralBody = new CentralBody(ellipsoid);
-        centralBody.showSkyAtmosphere = true;
-        centralBody.showGroundAtmosphere = true;
+
         centralBody.logoOffset = new Cartesian2(125, 0);
 
+        this.showSkyAtmosphere(true);
+        this.showGroundAtmosphere(true);
         this._configureCentralBodyImagery();
 
         scene.getPrimitives().setCentralBody(centralBody);
@@ -298,6 +671,7 @@ define([
         var handler = new EventHandler(canvas);
         handler.setMouseAction(function(e) { widget._handleLeftClick(e); }, MouseEventType.LEFT_CLICK);
         handler.setMouseAction(function(e) { widget._handleRightClick(e); }, MouseEventType.RIGHT_CLICK);
+        handler.setMouseAction(function(e) { widget._handleLeftDoubleClick(e); }, MouseEventType.LEFT_DOUBLE_CLICK);
         handler.setMouseAction(function(e) { widget._handleMouseMove(e); }, MouseEventType.MOVE);
         handler.setMouseAction(function(e) { widget._handleLeftDown(e); }, MouseEventType.LEFT_DOWN);
         handler.setMouseAction(function(e) { widget._handleLeftUp(e); }, MouseEventType.LEFT_UP);
@@ -305,17 +679,77 @@ define([
         handler.setMouseAction(function(e) { widget._handleRightDown(e); }, MouseEventType.RIGHT_DOWN);
         handler.setMouseAction(function(e) { widget._handleRightUp(e); }, MouseEventType.RIGHT_UP);
 
+        if (typeof this.highlightColor === 'undefined') {
+            this.highlightColor = new Color(0.0, 1.0, 0.0);
+        }
+
+        if (typeof this.highlightMaterial === 'undefined') {
+            this.highlightMaterial = Material.fromType(scene.getContext(), Material.ColorType);
+            this.highlightMaterial.uniforms.color = this.highlightColor;
+        }
+
+        if (typeof this.onObjectLeftDoubleClickSelected === 'undefined') {
+            this.onObjectLeftDoubleClickSelected = function(selectedObject) {
+                if (typeof selectedObject !== 'undefined' && typeof selectedObject.dynamicObject !== 'undefined') {
+                    this.centerCameraOnPick(selectedObject);
+                }
+            };
+        }
+
+        if (this.enableDragDrop) {
+            // TODO: Implement
+        }
+
+        var currentTime = new JulianDate();
+        if (typeof this.animationController === 'undefined') {
+            if (typeof this.clock === 'undefined') {
+                this.clock = new Clock({
+                    startTime : currentTime.addDays(-0.5),
+                    stopTime : currentTime.addDays(0.5),
+                    currentTime : currentTime,
+                    clockStep : ClockStep.SYSTEM_CLOCK_DEPENDENT,
+                    multiplier : 1
+                });
+            }
+            this.animationController = new AnimationController(this.clock);
+        } else {
+            this.clock = this.animationController.clock;
+        }
+
+        //var animationController = this.animationController;
+        var dynamicObjectCollection = this.dynamicObjectCollection = new DynamicObjectCollection();
+        //var clock = this.clock;
+        //var transitioner = this.sceneTransitioner = new SceneTransitioner(scene);
+        this.visualizers = VisualizerCollection.createCzmlStandardCollection(scene, dynamicObjectCollection);
+
+        if (typeof widget.endUserOptions.source !== 'undefined') {
+            getJson(widget.endUserOptions.source).then(function(czmlData) {
+                if (typeof widget.endUserOptions.lookAt !== 'undefined') {
+                    widget.addCZML(czmlData, widget.endUserOptions.source, widget.endUserOptions.lookAt);
+                } else {
+                    widget.addCZML(czmlData, widget.endUserOptions.source);
+                }
+            },
+            function(error) {
+                window.alert(error);
+            });
+        }
+
+        if (typeof widget.endUserOptions.stats !== 'undefined' && widget.endUserOptions.stats) {
+            widget.enableStatistics(true);
+        }
+
         if (widget.resizeWidgetOnWindowResize) {
             window.addEventListener('resize', function() {
                 widget.resize();
             }, false);
         }
 
+        this._camera3D = this.scene.getCamera().clone();
+
         if (typeof this.postSetup !== 'undefined') {
             this.postSetup(this);
         }
-
-        this.defaultCamera = camera.clone();
     },
 
     /**
@@ -324,16 +758,50 @@ define([
      * @memberof Viewer.prototype
      */
     Viewer.prototype.viewHome = function() {
-        var camera = this.scene.getCamera();
-        camera.position = this.defaultCamera.position;
-        camera.direction = this.defaultCamera.direction;
-        camera.up = this.defaultCamera.up;
-        camera.transform = this.defaultCamera.transform;
-        camera.frustum = this.defaultCamera.frustum.clone();
+        this._viewFromTo = undefined;
 
+        var scene = this.scene;
+        var mode = scene.mode;
+        var camera = scene.getCamera();
         var controllers = camera.getControllers();
         controllers.removeAll();
-        this.centralBodyCameraController = controllers.addCentralBody();
+
+        if (mode === SceneMode.SCENE2D) {
+            controllers.add2D(scene.scene2D.projection);
+            scene.viewExtent(Extent.MAX_VALUE);
+        } else if (mode === SceneMode.SCENE3D) {
+            this.centralBodyCameraController = controllers.addCentralBody();
+            var camera3D = this._camera3D;
+            camera3D.position.clone(camera.position);
+            camera3D.direction.clone(camera.direction);
+            camera3D.up.clone(camera.up);
+            camera3D.right.clone(camera.right);
+            camera3D.transform.clone(camera.transform);
+            camera3D.frustum.clone(camera.frustum);
+        } else if (mode === SceneMode.COLUMBUS_VIEW) {
+            var transform = new Matrix4(0.0, 0.0, 1.0, 0.0,
+                                        1.0, 0.0, 0.0, 0.0,
+                                        0.0, 1.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 1.0);
+
+            var maxRadii = Ellipsoid.WGS84.getMaximumRadius();
+            var position = new Cartesian3(0.0, -1.0, 1.0).normalize().multiplyByScalar(5.0 * maxRadii);
+            var direction = Cartesian3.ZERO.subtract(position).normalize();
+            var right = direction.cross(Cartesian3.UNIT_Z).normalize();
+            var up = right.cross(direction);
+
+            var frustum = new PerspectiveFrustum();
+            frustum.fovy = CesiumMath.toRadians(60.0);
+            frustum.aspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+
+            camera.position = position;
+            camera.direction = direction;
+            camera.up = up;
+            camera.frustum = frustum;
+            camera.transform = transform;
+
+            controllers.addColumbusView();
+        }
     };
 
     /**
@@ -387,7 +855,8 @@ define([
      * @param {Boolean} show - <code>true</code> to enable the effect.
      */
     Viewer.prototype.showSkyAtmosphere = function(show) {
-        this.centralBody.showSkyAtmosphere = show;
+        this._showSkyAtmosphere = show;
+        this.centralBody.showSkyAtmosphere = show && this.centralBody.affectedByLighting;
     };
 
     /**
@@ -399,7 +868,8 @@ define([
      * @param {Boolean} show - <code>true</code> to enable the effect.
      */
     Viewer.prototype.showGroundAtmosphere = function(show) {
-        this.centralBody.showGroundAtmosphere = show;
+        this._showGroundAtmosphere = show;
+        this.centralBody.showGroundAtmosphere = show && this.centralBody.affectedByLighting;
     };
 
     /**
@@ -446,6 +916,40 @@ define([
             this.centralBody.logoOffset = new Cartesian2(logoOffsetX, logoOffsetY);
         }
     };
+    /**
+     * Highlight an object in the scene, usually in response to a click or hover.
+     *
+     * @function
+     * @memberof CesiumViewerWidget.prototype
+     * @param {Object} selectedObject - The object to highlight, or <code>undefined</code> to un-highlight.
+     */
+    Viewer.prototype.highlightObject = function(selectedObject) {
+        if (this.highlightedObject !== selectedObject) {
+            if (typeof this.highlightedObject !== 'undefined' &&
+                    (typeof this.highlightedObject.isDestroyed !== 'function' || !this.highlightedObject.isDestroyed())) {
+                if (typeof this.highlightedObject.material !== 'undefined') {
+                    this.highlightedObject.material = this._originalMaterial;
+                } else if (typeof this.highlightedObject.outerMaterial !== 'undefined') {
+                    this.highlightedObject.outerMaterial = this._originalMaterial;
+                } else if (typeof this.highlightedObject.setColor !== 'undefined') {
+                    this.highlightedObject.setColor(this._originalColor);
+                }
+            }
+            this.highlightedObject = selectedObject;
+            if (typeof selectedObject !== 'undefined') {
+                if (typeof selectedObject.material !== 'undefined') {
+                    this._originalMaterial = selectedObject.material;
+                    selectedObject.material = this.highlightMaterial;
+                } else if (typeof selectedObject.outerMaterial !== 'undefined') {
+                    this._originalMaterial = selectedObject.outerMaterial;
+                    selectedObject.outerMaterial = this.highlightMaterial;
+                } else if (typeof this.highlightedObject.setColor !== 'undefined') {
+                    this._originalColor = Color.clone(selectedObject.getColor(), this._originalColor);
+                    selectedObject.setColor(this.highlightColor);
+                }
+            }
+        }
+    };
 
     /**
      * Call this function prior to rendering each animation frame, to prepare
@@ -457,6 +961,13 @@ define([
      */
     Viewer.prototype.update = function(currentTime) {
         this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
+        this.visualizers.update(currentTime);
+
+        // Update the camera to stay centered on the selected object, if any.
+        var viewFromTo = this._viewFromTo;
+        if (typeof viewFromTo !== 'undefined') {
+            viewFromTo.update(currentTime);
+        }
     };
 
     /**
@@ -538,9 +1049,10 @@ define([
      */
     Viewer.prototype.startRenderLoop = function() {
         var widget = this;
+        var animationController = widget.animationController;
 
         function updateAndRender() {
-            var currentTime = new JulianDate();
+            var currentTime = animationController.update();
             widget.update(currentTime);
             widget.render();
             requestAnimationFrame(updateAndRender);

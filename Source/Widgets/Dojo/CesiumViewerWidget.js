@@ -679,7 +679,8 @@ define([
                         this.centerCameraOnPick(selectedObject);
                     }
                 };
-                                }
+            }
+
             if (this.enableDragDrop) {
                 var dropBox = this.cesiumNode;
                 on(dropBox, 'drop', lang.hitch(widget, 'handleDrop'));
