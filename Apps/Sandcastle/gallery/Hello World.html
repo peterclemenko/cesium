@@ -62,7 +62,12 @@ require(['Cesium'], function (Cesium) {
     var parentNode = document.getElementById('cesiumContainer');
 
     var viewer = new Cesium.Viewer(parentNode, {
-        imageBase : '../../../Images/'
+        imageBase : '../../../Images/',
+        enableDragDrop : true,
+        endUserOptions : {
+            // Try un-commenting the next line and pressing F8.
+            //'source' : '../../CesiumViewer/Gallery/simple.czml'
+        }
     });
 
     // Want to modify the render loop?  Double-click the
