@@ -1,6 +1,7 @@
 /*global define,console*/
 define([
     '../Core/DeveloperError',
+    '../Core/loadJson',
     '../Core/BoundingRectangle',
     '../Core/Clock',
     '../Core/ClockStep',
@@ -33,12 +34,11 @@ define([
     '../Scene/SingleTileProvider',
     '../Scene/PerformanceDisplay',
     '../Scene/SceneMode',
-    '../DynamicScene/processCzml',
     '../DynamicScene/DynamicObjectView',
-    '../DynamicScene/DynamicObjectCollection',
-    '../DynamicScene/VisualizerCollection'
+    '../DynamicScene/CzmlProcessor'
 ], function(
     DeveloperError,
+    loadJson,
     BoundingRectangle,
     Clock,
     ClockStep,
@@ -71,10 +71,8 @@ define([
     SingleTileProvider,
     PerformanceDisplay,
     SceneMode,
-    processCzml,
     DynamicObjectView,
-    DynamicObjectCollection,
-    VisualizerCollection
+    CzmlProcessor
 ) {
     "use strict";
 
@@ -535,11 +533,11 @@ define([
     Viewer.prototype.setTimeFromBuffer = function() {
         var clock = this.clock;
 
-        this.animReverse.set('checked', false);
-        this.animPause.set('checked', true);
-        this.animPlay.set('checked', false);
+        //this.animReverse.set('checked', false);
+        //this.animPause.set('checked', true);
+        //this.animPlay.set('checked', false);
 
-        var availability = this.dynamicObjectCollection.computeAvailability();
+        var availability = this.czmlProcessor.computeAvailability();
         if (availability.start.equals(Iso8601.MINIMUM_VALUE)) {
             clock.startTime = new JulianDate();
             clock.stopTime = clock.startTime.addDays(1);
@@ -552,38 +550,65 @@ define([
 
         clock.multiplier = 60;
         clock.currentTime = clock.startTime;
-        this.timelineControl.zoomTo(clock.startTime, clock.stopTime);
+        //this.timelineControl.zoomTo(clock.startTime, clock.stopTime);
     };
 
     /**
-     * Clears all CZML data from the viewer.
+     * Removes all CZML data from the viewer.
      *
      * @function
      * @memberof Viewer.prototype
      */
     Viewer.prototype.clearAllCZML = function() {
         this.centerCameraOnObject(undefined);
-        //CZML_TODO visualizers.removeAllPrimitives(); is not really needed here, but right now visualizers
-        //cache data indefinitely and removeAll is the only way to get rid of it.
-        //while there are no visual differences, removeAll cleans the cache and improves performance
-        this.visualizers.removeAllPrimitives();
-        this.dynamicObjectCollection.clear();
+        this.czmlProcessor.removeAll();
     };
 
     /**
-     * Add CZML data to the viewer.
+     * Removes a named CZML stream from the viewer.
      *
      * @function
      * @memberof Viewer.prototype
-     * @param {CZML} czml - The CZML (as objects, not JSON) to be processed and added to the viewer.
+     * @param {string} source - The original filename or URI that was supplied to addCZML.
+     */
+    Viewer.prototype.removeCZML = function(source) {
+        // Any easy way to check if the camera is centered on an object that will survive?
+        this.centerCameraOnObject(undefined);
+        this.czmlProcessor.remove(source);
+    };
+
+    /**
+     * Add CZML data to the viewer.  The first parameter can be a collection of CZML
+     * objects, or <code>undefined</code>.  If the first parameter is <code>undefined</code>,
+     * the second parameter will be used to fetch the CZML stream asynchronously.
+     *
+     * @function
+     * @memberof Viewer.prototype
+     * @param {CZML} czml - The CZML (as objects or undefined) to be processed and added to the viewer.
      * @param {string} source - The filename or URI that was the source of the CZML collection.
      * @param {string} lookAt - Optional.  The ID of the object to center the camera on.
      */
     Viewer.prototype.addCZML = function(czml, source, lookAt) {
-        processCzml(czml, this.dynamicObjectCollection, source);
-        this.setTimeFromBuffer();
-        if (typeof lookAt !== 'undefined') {
-            this.centerCameraOnObject(this.dynamicObjectCollection.getObject(lookAt));
+        var widget = this;
+        var onLoad = function(czmlData) {
+            widget.czmlProcessor.add(czmlData, source);
+            widget.setTimeFromBuffer();
+            if (typeof lookAt !== 'undefined') {
+                widget.centerCameraOnObject(widget.dynamicObjectCollection.getObject(lookAt));
+            }
+        };
+
+        // Test if the CZML objects were provided, and if not, fetch them asynchronously.
+        if (typeof czml === 'undefined') {
+            loadJson(source).then(function(czmlData) {
+                onLoad(czmlData);
+            },
+            function(error) {
+                console.error(error);
+                window.alert(error);
+            });
+        } else {
+            onLoad(czml);
         }
     };
 
@@ -602,7 +627,6 @@ define([
         var f = files[0];
         var reader = new FileReader();
         var widget = this;
-        widget.clearAllCZML();
         reader.onload = function(evt) {
             widget.addCZML(JSON.parse(evt.target.result), f.name);
         };
@@ -716,23 +740,18 @@ define([
             this.clock = this.animationController.clock;
         }
 
-        //var animationController = this.animationController;
-        var dynamicObjectCollection = this.dynamicObjectCollection = new DynamicObjectCollection();
-        //var clock = this.clock;
-        //var transitioner = this.sceneTransitioner = new SceneTransitioner(scene);
-        this.visualizers = VisualizerCollection.createCzmlStandardCollection(scene, dynamicObjectCollection);
+        var animationController = this.animationController;
+        this.czmlProcessor = new CzmlProcessor(scene);
+
+        var clock = this.clock;
+        var transitioner = this.sceneTransitioner = new SceneTransitioner(scene);
 
         if (typeof widget.endUserOptions.source !== 'undefined') {
-            getJson(widget.endUserOptions.source).then(function(czmlData) {
-                if (typeof widget.endUserOptions.lookAt !== 'undefined') {
-                    widget.addCZML(czmlData, widget.endUserOptions.source, widget.endUserOptions.lookAt);
-                } else {
-                    widget.addCZML(czmlData, widget.endUserOptions.source);
-                }
-            },
-            function(error) {
-                window.alert(error);
-            });
+            if (typeof widget.endUserOptions.lookAt !== 'undefined') {
+                widget.addCZML(undefined, widget.endUserOptions.source, widget.endUserOptions.lookAt);
+            } else {
+                widget.addCZML(undefined, widget.endUserOptions.source);
+            }
         }
 
         if (typeof widget.endUserOptions.stats !== 'undefined' && widget.endUserOptions.stats) {
@@ -916,11 +935,12 @@ define([
             this.centralBody.logoOffset = new Cartesian2(logoOffsetX, logoOffsetY);
         }
     };
+
     /**
      * Highlight an object in the scene, usually in response to a click or hover.
      *
      * @function
-     * @memberof CesiumViewerWidget.prototype
+     * @memberof Viewer.prototype
      * @param {Object} selectedObject - The object to highlight, or <code>undefined</code> to un-highlight.
      */
     Viewer.prototype.highlightObject = function(selectedObject) {
@@ -960,9 +980,9 @@ define([
      * @param {JulianDate} currentTime - The date and time in the scene of the frame to be rendered
      */
     Viewer.prototype.update = function(currentTime) {
-        this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
-        this.visualizers.update(currentTime);
 
+        this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
+        this.czmlProcessor.update(currentTime);
         // Update the camera to stay centered on the selected object, if any.
         var viewFromTo = this._viewFromTo;
         if (typeof viewFromTo !== 'undefined') {
