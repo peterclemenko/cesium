@@ -21,7 +21,8 @@
             { name: 'Scene', location: 'Source/Scene' },
             { name: 'Shaders', location: 'Source/Shaders' },
             { name: 'ThirdParty', location: 'Source/ThirdParty' },
-            { name: 'Widgets', location: 'Source/Widgets' }
+            { name: 'Widgets', location: 'Source/Widgets' },
+            { name: 'Workers', location: 'Source/Workers' }
         ]
     });
     </script>
@@ -77,25 +78,25 @@ require([
 
     // Initialize a viewer capable of drag-and-drop
     // and user customizations.
-    var cesiumWidget = new CesiumWidget({
+    var widget = new CesiumWidget({
         endUserOptions : endUserOptions,
-        enableDragDrop : true,
+        enableDragDrop : true
+    });
+    widget.placeAt(dom.byId("cesiumContainer"));
+    widget.startWidget();
 
-        postSetup : function(widget) {
-            var animationController = widget.animationController;
+    var animationController = widget.animationController;
 
-            // Custom render loop. See "startRenderLoop".
-            function updateAndRender() {
-                var currentTime = animationController.update();
-                widget.update(currentTime);
-                dom.byId('toolbar').innerHTML =
-                    currentTime.toDate().toUTCString();
-                widget.render();
-                requestAnimationFrame(updateAndRender);
-            }
-            updateAndRender();
-        }
-    }).placeAt(dom.byId("cesiumContainer"));
+    // Custom render loop. See "startRenderLoop".
+    function updateAndRender() {
+        var currentTime = animationController.update();
+        widget.update(currentTime);
+        dom.byId('toolbar').innerHTML =
+            currentTime.toDate().toUTCString();
+        widget.render();
+        requestAnimationFrame(updateAndRender);
+    }
+    updateAndRender();
 });
 </script>
 </body>
