@@ -138,6 +138,7 @@ console.log('appendConsole: ' + message);
             // These are copied from the Eclipse jsHint plugin options on the Cesium project itself.
             // They should be kept in sync with that list of options.
             bitwise : false,
+            camelcase : false,
             curly : true,
             eqeqeq : true,
             forin : true,
@@ -148,8 +149,10 @@ console.log('appendConsole: ' + message);
             noempty : false,
             nonew : true,
             plusplus : false,
+            quotmark : false,
             regexp : false,
             undef : true,
+            unused : false,
             strict : true,
             trailing : false,
             asi : false,
@@ -921,7 +924,9 @@ console.log('appendConsole: ' + message);
 
             // Sort alphabetically.  This will eventually be a user option.
             gallery_demos.sort(function(a, b) {
-                return (b.name < a.name) ? 1 : ((b.name > a.name) ? -1 : 0);
+                var aName = a.name.toUpperCase();
+                var bName = b.name.toUpperCase();
+                return (bName < aName) ? 1 : ((bName > aName) ? -1 : 0);
             });
 
             var queryInGalleryIndex = false;
