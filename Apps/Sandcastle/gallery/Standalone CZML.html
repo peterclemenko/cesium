@@ -51,13 +51,36 @@
 
     var parentNode = document.getElementById('cesiumContainer');
 
+    var endUserOptions = {
+        'source' : '../../CesiumViewer/Gallery/LotsOfSensors.czml'
+    };
+
     var viewer = new Cesium.Viewer(parentNode, {
-        imageBase : '../../../Images/'
+        imageBase : '../../../Images/',
+        endUserOptions : endUserOptions,
+        enableDragDrop : true
     });
 
     viewer.startRenderLoop();
 
-    document.getElementById('toolbar').innerHTML = '';
+    // Custom render loop. See "startRenderLoop".
+    function updateAndRender() {
+        // Standard render loop: Update to new time.
+        var currentTime = viewer.animationController.update();
+        viewer.update(currentTime);
+
+        // Customization: Display current time.
+        document.getElementById('toolbar').innerHTML =
+            currentTime.toDate().toUTCString();
+
+        // Standard render loop: Render & re-schedule.
+        viewer.render();
+        Cesium.requestAnimationFrame(updateAndRender);
+    }
+
+    // Manually start the render loop by calling it once.
+    updateAndRender();
+
 }());
 </script>
 </body>
