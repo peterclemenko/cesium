@@ -270,15 +270,6 @@ define([
     Viewer.prototype.resizeWidgetOnWindowResize = true;
 
     /**
-     * If supplied, this function will be called at the end of widget setup.
-     *
-     * @function
-     * @memberof Viewer.prototype
-     * @see Viewer#startRenderLoop
-     */
-    Viewer.prototype.postSetup = undefined;
-
-    /**
      * This function will get a callback in the event of setup failure, likely indicating
      * a problem with WebGL support or the availability of a GL context.
      *
@@ -992,6 +983,7 @@ define([
 
         this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
         this.czmlProcessor.update(currentTime);
+
         // Update the camera to stay centered on the selected object, if any.
         var viewFromTo = this._viewFromTo;
         if (typeof viewFromTo !== 'undefined') {
@@ -1056,11 +1048,12 @@ define([
 
     /**
      * This is a simple render loop that can be started if there is only one <code>Viewer</code> widget
-     * on your page.  If you wish to
-     * customize your render loop, avoid this function and instead use code similar to the following example.
+     * on your page.  If you wish to customize your render loop, avoid this function and instead
+     * use code similar to one of the following examples.
      * @function
      * @memberof Viewer.prototype
      * @see requestAnimationFrame
+     * @see Viewer#startWidget
      * @example
      * // This takes the place of startRenderLoop for a single widget.
      *
