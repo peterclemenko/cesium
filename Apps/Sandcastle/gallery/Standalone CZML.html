@@ -58,10 +58,9 @@
     var viewer = new Cesium.Viewer(parentNode, {
         imageBase : '../../../Images/',
         endUserOptions : endUserOptions,
-        enableDragDrop : true
+        enableDragDrop : true,
+        autoStartRenderLoop : false
     });
-
-    viewer.startRenderLoop();
 
     // Custom render loop. See "startRenderLoop".
     function updateAndRender() {

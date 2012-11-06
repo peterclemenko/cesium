@@ -80,10 +80,11 @@ require([
     // and user customizations.
     var widget = new CesiumWidget({
         endUserOptions : endUserOptions,
-        enableDragDrop : true
+        enableDragDrop : true,
+        autoStartRenderLoop : false
     });
     widget.placeAt(dom.byId("cesiumContainer"));
-    widget.startWidget();
+    widget.startup();
 
     var animationController = widget.animationController;
 

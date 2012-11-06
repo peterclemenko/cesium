@@ -314,11 +314,9 @@ require([
     widget.startup();
     dom.byId('toolbar').innerHTML = '';
 
-    var scene = widget.scene;
+    widget.showGroundAtmosphere(false);
+
     var centralBody = widget.centralBody;
-
-    centralBody.affectedByLighting = false;
-
     imageryLayerCollection = centralBody.getImageryLayers();
 
     setupLayers();
