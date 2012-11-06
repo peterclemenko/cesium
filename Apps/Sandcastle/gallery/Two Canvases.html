@@ -84,7 +84,8 @@
     // Create the top widget in 3D mode.
     var widget1 = new Cesium.Viewer(topParent, {
         endUserOptions : endUserOptions,
-        useStreamingImagery : false
+        useStreamingImagery : false,
+        autoStartRenderLoop : false
     });
     widget1.cesiumLogo.style.display = 'none';
 
@@ -96,7 +97,8 @@
     var widget2 = new Cesium.Viewer(bottomParent, {
         animationController : animationController,
         endUserOptions : endUserOptions,
-        useStreamingImagery : false
+        useStreamingImagery : false,
+        autoStartRenderLoop : false
     });
     widget2.showGroundAtmosphere(false);
     widget2.showSkyAtmosphere(false);
