@@ -97,7 +97,7 @@ define([
         }
 
         this._createNodes(parentNode);
-        this._setupCesium();
+        this._startupCesium();
     };
 
     // Static constructor for other frameworks like Dojo.
@@ -112,7 +112,7 @@ define([
         }
 
         externalWidget._createNodes(parentNode);
-        externalWidget._setupCesium();
+        externalWidget._startupCesium();
     };
 
     Viewer.prototype._createNodes = function(parentNode) {
@@ -628,7 +628,11 @@ define([
         reader.readAsText(f);
     };
 
-    Viewer.prototype._setupCesium = function() {
+    Viewer.prototype._startupCesium = function() {
+        if (this._started) {
+            return;
+        }
+
         var canvas = this.canvas, ellipsoid = this.ellipsoid, scene, widget = this;
 
         try {
@@ -639,6 +643,7 @@ define([
             }
             return;
         }
+        this._started = true;
 
         this.resize();
 
@@ -767,8 +772,8 @@ define([
 
         this._camera3D = this.scene.getCamera().clone();
 
-        if (typeof this.postSetup !== 'undefined') {
-            this.postSetup(this);
+        if (this.autoStartRenderLoop) {
+            this.startRenderLoop();
         }
     },
 
@@ -1047,13 +1052,23 @@ define([
     };
 
     /**
+     * If true, {@link Viewer#startRenderLoop} will be called automatically
+     * at the end of the widget's construction.
+     *
+     * @type {Boolean}
+     * @memberof Viewer.prototype
+     * @default true
+     */
+    Viewer.prototype.autoStartRenderLoop = true;
+
+    /**
      * This is a simple render loop that can be started if there is only one <code>Viewer</code> widget
      * on your page.  If you wish to customize your render loop, avoid this function and instead
      * use code similar to one of the following examples.
      * @function
      * @memberof Viewer.prototype
      * @see requestAnimationFrame
-     * @see Viewer#startWidget
+     * @see Viewer#autoStartRenderLoop
      * @example
      * // This takes the place of startRenderLoop for a single widget.
      *
