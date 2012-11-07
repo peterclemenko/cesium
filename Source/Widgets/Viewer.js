@@ -142,9 +142,9 @@ define([
      *
      * @type {String}
      * @memberof Viewer.prototype
-     * @default '../../../Images/'
+     * @default '../../../Source/Assets/Imagery/'
      */
-    Viewer.prototype.imageBase = '../../../Images/';
+    Viewer.prototype.imageBase = '../../../Source/Assets/Imagery/';
 
     /**
      * Ellipsoid to use.
