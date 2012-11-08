@@ -127,7 +127,7 @@ define([
         this.cesiumLogo.href = 'http://cesium.agi.com/';
         this.cesiumLogo.target = '_blank';
         this.cesiumLogo.style.cssText = 'display: block; position: absolute; bottom: 4px; left: 0; text-decoration: none; ' +
-            'background-image: url(' + this.imageBase + 'Cesium_Logo_overlay.png); width: 118px; height: 26px;';
+            'background-image: url(' + this.widgetImages + 'Cesium_Logo_overlay.png); width: 118px; height: 26px;';
 
         this.canvas = document.createElement('canvas');
         this.canvas.style.cssText = 'width: 100%; height: 100%;';
@@ -145,6 +145,15 @@ define([
      * @default '../../../Source/Assets/Imagery/'
      */
     Viewer.prototype.imageBase = '../../../Source/Assets/Imagery/';
+
+    /**
+     * Path to widget images.
+     *
+     * @type {String}
+     * @memberof Viewer.prototype
+     * @default '../../../Source/Widgets/Images/'
+     */
+    Viewer.prototype.widgetImages = '../../../Source/Widgets/Images/';
 
     /**
      * Ellipsoid to use.

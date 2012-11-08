@@ -24,6 +24,11 @@ define([
     return declare('Cesium.CesiumWidget', [_WidgetBase, _TemplatedMixin], {
         templateString : '<div data-dojo-attach-point="parentNode" style="width: 100%; height: 100%;"></div>',
 
+        constructor : function() {
+            this.imageBase = require.toUrl('Assets/Imagery') + '/';
+            this.widgetImages = require.toUrl('../Images') + '/';
+        },
+
         startup : function() {
             Viewer.createOnWidget(this, this.parentNode);
         }
