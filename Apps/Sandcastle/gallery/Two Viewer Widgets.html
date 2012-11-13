@@ -142,8 +142,8 @@ require([
         requestAnimationFrame(updateAndRender);
     }
 
-    // Call the render loop once manually, to prime the pump.
-    updateAndRender();
+    // Schedule the render loop once manually, to prime the pump.
+    requestAnimationFrame(updateAndRender);
 });
 </script>
 </body>

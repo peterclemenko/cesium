@@ -115,8 +115,8 @@
         widget2.render();
         Cesium.requestAnimationFrame(updateAndRender);
     }
-    // Begin rendering by calling the loop once manually.
-    updateAndRender();
+    // Begin rendering by scheduling the loop once manually.
+    Cesium.requestAnimationFrame(updateAndRender);
 
     document.getElementById('topbar').innerHTML = '3D';
     document.getElementById('bottombar').innerHTML = '2D';

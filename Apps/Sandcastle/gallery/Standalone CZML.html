@@ -77,8 +77,8 @@
         Cesium.requestAnimationFrame(updateAndRender);
     }
 
-    // Manually start the render loop by calling it once.
-    updateAndRender();
+    // Manually start the render loop by scheduling it once.
+    Cesium.requestAnimationFrame(updateAndRender);
 
 }());
 </script>
