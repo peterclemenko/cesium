@@ -12,9 +12,9 @@ define([
         '../../Core/BoundingRectangle',
         '../../Core/Ellipsoid',
         '../../Core/computeSunPosition',
-        '../../Core/EventHandler',
+        '../../Core/ScreenSpaceEventHandler',
         '../../Core/FeatureDetection',
-        '../../Core/MouseEventType',
+        '../../Core/ScreenSpaceEventType',
         '../../Core/Cartesian2',
         '../../Core/Cartesian3',
         '../../Core/JulianDate',
@@ -42,9 +42,9 @@ define([
         BoundingRectangle,
         Ellipsoid,
         computeSunPosition,
-        EventHandler,
+        ScreenSpaceEventHandler,
         FeatureDetection,
-        MouseEventType,
+        ScreenSpaceEventType,
         Cartesian2,
         Cartesian3,
         JulianDate,
@@ -205,8 +205,8 @@ define([
             on(canvas, 'contextmenu', event.stop);
             on(canvas, 'selectstart', event.stop);
 
-            var imageryUrl = '../../Assets/Textures/';
-            this.dayImageUrl = defaultValue(this.dayImageUrl, require.toUrl(imageryUrl + 'NE2_50M_SR_W_2048.jpg'));
+            var imageryUrl = require.toUrl('../../Assets/Textures/');
+            this.dayImageUrl = defaultValue(this.dayImageUrl, imageryUrl + 'NE2_LR_LC_SR_W_DR_2048.jpg');
 
             var centralBody = this.centralBody = new CentralBody(ellipsoid);
             centralBody.logoOffset = new Cartesian2(125, 0);
@@ -217,12 +217,12 @@ define([
 
             if (this.showSkyBox) {
                 scene.skyBox = new SkyBox({
-                    positiveX: require.toUrl(imageryUrl + 'SkyBox/tycho8_px_80.jpg'),
-                    negativeX: require.toUrl(imageryUrl + 'SkyBox/tycho8_mx_80.jpg'),
-                    positiveY: require.toUrl(imageryUrl + 'SkyBox/tycho8_py_80.jpg'),
-                    negativeY: require.toUrl(imageryUrl + 'SkyBox/tycho8_my_80.jpg'),
-                    positiveZ: require.toUrl(imageryUrl + 'SkyBox/tycho8_pz_80.jpg'),
-                    negativeZ: require.toUrl(imageryUrl + 'SkyBox/tycho8_mz_80.jpg')
+                    positiveX: imageryUrl + 'SkyBox/tycho8_px_80.jpg',
+                    negativeX: imageryUrl + 'SkyBox/tycho8_mx_80.jpg',
+                    positiveY: imageryUrl + 'SkyBox/tycho8_py_80.jpg',
+                    negativeY: imageryUrl + 'SkyBox/tycho8_my_80.jpg',
+                    positiveZ: imageryUrl + 'SkyBox/tycho8_pz_80.jpg',
+                    negativeZ: imageryUrl + 'SkyBox/tycho8_mz_80.jpg'
                 });
             }
 
@@ -230,18 +230,17 @@ define([
 
             var camera = scene.getCamera();
             camera.position = camera.position.multiplyByScalar(1.5);
+            camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
 
-            this.centralBodyCameraController = camera.getControllers().addCentralBody();
-
-            var handler = new EventHandler(canvas);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftClick'), MouseEventType.LEFT_CLICK);
-            handler.setMouseAction(lang.hitch(this, '_handleRightClick'), MouseEventType.RIGHT_CLICK);
-            handler.setMouseAction(lang.hitch(this, '_handleMouseMove'), MouseEventType.MOVE);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftDown'), MouseEventType.LEFT_DOWN);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftUp'), MouseEventType.LEFT_UP);
-            handler.setMouseAction(lang.hitch(this, '_handleWheel'), MouseEventType.WHEEL);
-            handler.setMouseAction(lang.hitch(this, '_handleRightDown'), MouseEventType.RIGHT_DOWN);
-            handler.setMouseAction(lang.hitch(this, '_handleRightUp'), MouseEventType.RIGHT_UP);
+            var handler = new ScreenSpaceEventHandler(canvas);
+            handler.setInputAction(lang.hitch(this, '_handleLeftClick'), ScreenSpaceEventType.LEFT_CLICK);
+            handler.setInputAction(lang.hitch(this, '_handleRightClick'), ScreenSpaceEventType.RIGHT_CLICK);
+            handler.setInputAction(lang.hitch(this, '_handleMouseMove'), ScreenSpaceEventType.MOUSE_MOVE);
+            handler.setInputAction(lang.hitch(this, '_handleLeftDown'), ScreenSpaceEventType.LEFT_DOWN);
+            handler.setInputAction(lang.hitch(this, '_handleLeftUp'), ScreenSpaceEventType.LEFT_UP);
+            handler.setInputAction(lang.hitch(this, '_handleWheel'), ScreenSpaceEventType.WHEEL);
+            handler.setInputAction(lang.hitch(this, '_handleRightDown'), ScreenSpaceEventType.RIGHT_DOWN);
+            handler.setInputAction(lang.hitch(this, '_handleRightUp'), ScreenSpaceEventType.RIGHT_UP);
 
             if (widget.resizeWidgetOnWindowResize) {
                 on(window, 'resize', function() {
@@ -263,10 +262,7 @@ define([
             camera.up = this.defaultCamera.up;
             camera.transform = this.defaultCamera.transform;
             camera.frustum = this.defaultCamera.frustum.clone();
-
-            var controllers = camera.getControllers();
-            controllers.removeAll();
-            this.centralBodyCameraController = controllers.addCentralBody();
+            camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
         },
 
         enableStatistics : function(showStatistics) {
@@ -304,11 +300,15 @@ define([
             }
         },
 
+        initializeFrame : function(currentTime) {
+            this.scene.initializeFrame(currentTime);
+        },
+
         update : function(currentTime) {
         },
 
-        render : function(currentTime) {
-            this.scene.render(currentTime);
+        render : function() {
+            this.scene.render();
         },
 
         _configureCentralBodyImagery : function() {
@@ -337,8 +337,9 @@ define([
 
             function updateAndRender() {
                 var currentTime = new JulianDate();
+                widget.initializeFrame(currentTime);
                 widget.update(currentTime);
-                widget.render(currentTime);
+                widget.render();
                 requestAnimationFrame(updateAndRender);
             }
             updateAndRender();

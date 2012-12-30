@@ -27,9 +27,9 @@ define([
         '../../Core/Iso8601',
         '../../Core/Fullscreen',
         '../../Core/computeSunPosition',
-        '../../Core/EventHandler',
+        '../../Core/ScreenSpaceEventHandler',
         '../../Core/FeatureDetection',
-        '../../Core/MouseEventType',
+        '../../Core/ScreenSpaceEventType',
         '../../Core/Cartesian2',
         '../../Core/Cartesian3',
         '../../Core/JulianDate',
@@ -42,6 +42,7 @@ define([
         '../../Scene/PerspectiveFrustum',
         '../../Scene/Material',
         '../../Scene/Scene',
+        '../../Scene/CameraColumbusViewMode',
         '../../Scene/CentralBody',
         '../../Scene/BingMapsImageryProvider',
         '../../Scene/BingMapsStyle',
@@ -84,9 +85,9 @@ define([
         Iso8601,
         Fullscreen,
         computeSunPosition,
-        EventHandler,
+        ScreenSpaceEventHandler,
         FeatureDetection,
-        MouseEventType,
+        ScreenSpaceEventType,
         Cartesian2,
         Cartesian3,
         JulianDate,
@@ -99,6 +100,7 @@ define([
         PerspectiveFrustum,
         Material,
         Scene,
+        CameraColumbusViewMode,
         CentralBody,
         BingMapsImageryProvider,
         BingMapsStyle,
@@ -311,21 +313,6 @@ define([
                 }
             } else {
                 this._viewFromTo = undefined;
-
-                var scene = this.scene;
-                var mode = scene.mode;
-                var camera = scene.getCamera();
-                var controllers = camera.getControllers();
-                if (mode === SceneMode.SCENE2D) {
-                    controllers.removeAll();
-                    controllers.add2D(scene.scene2D.projection);
-                } else if (mode === SceneMode.SCENE3D) {
-                    //For now just rename at the last location
-                    //camera will stay in spindle/rotate mode.
-                } else if (mode === SceneMode.COLUMBUS_VIEW) {
-                    controllers.removeAll();
-                    controllers.addColumbusView();
-                }
             }
         },
 
@@ -448,9 +435,9 @@ define([
                     this.onObjectMousedOver(mousedOverObject);
                 }
             }
-            if (typeof this.leftDown !== 'undefined' && this.leftDown && typeof this.onLeftDrag !== 'undefined') {
+            if (true === this.leftDown && typeof this.onLeftDrag !== 'undefined') {
                 this.onLeftDrag(movement);
-            } else if (typeof this.rightDown !== 'undefined' && this.rightDown && typeof this.onZoom !== 'undefined') {
+            } else if (true === this.rightDown && typeof this.onZoom !== 'undefined') {
                 this.onZoom(movement);
             }
         },
@@ -645,8 +632,8 @@ define([
                 context.setThrowOnWebGLError(true);
             }
 
-            var imageryUrl = '../../Assets/Textures/';
-            this.dayImageUrl = defaultValue(this.dayImageUrl, require.toUrl(imageryUrl + 'NE2_50M_SR_W_2048.jpg'));
+            var imageryUrl = require.toUrl('../../Assets/Textures/');
+            this.dayImageUrl = defaultValue(this.dayImageUrl, imageryUrl + 'NE2_LR_LC_SR_W_DR_2048.jpg');
 
             var centralBody = this.centralBody = new CentralBody(ellipsoid);
 
@@ -659,12 +646,12 @@ define([
 
             if (this.showSkyBox) {
                 scene.skyBox = new SkyBox({
-                    positiveX: require.toUrl(imageryUrl + 'SkyBox/tycho8_px_80.jpg'),
-                    negativeX: require.toUrl(imageryUrl + 'SkyBox/tycho8_mx_80.jpg'),
-                    positiveY: require.toUrl(imageryUrl + 'SkyBox/tycho8_py_80.jpg'),
-                    negativeY: require.toUrl(imageryUrl + 'SkyBox/tycho8_my_80.jpg'),
-                    positiveZ: require.toUrl(imageryUrl + 'SkyBox/tycho8_pz_80.jpg'),
-                    negativeZ: require.toUrl(imageryUrl + 'SkyBox/tycho8_mz_80.jpg')
+                    positiveX: imageryUrl + 'SkyBox/tycho8_px_80.jpg',
+                    negativeX: imageryUrl + 'SkyBox/tycho8_mx_80.jpg',
+                    positiveY: imageryUrl + 'SkyBox/tycho8_py_80.jpg',
+                    negativeY: imageryUrl + 'SkyBox/tycho8_my_80.jpg',
+                    positiveZ: imageryUrl + 'SkyBox/tycho8_pz_80.jpg',
+                    negativeZ: imageryUrl + 'SkyBox/tycho8_mz_80.jpg'
                 });
             }
 
@@ -672,19 +659,18 @@ define([
 
             var camera = scene.getCamera();
             camera.position = camera.position.multiplyByScalar(1.5);
+            camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
 
-            this.centralBodyCameraController = camera.getControllers().addCentralBody();
-
-            var handler = new EventHandler(canvas);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftClick'), MouseEventType.LEFT_CLICK);
-            handler.setMouseAction(lang.hitch(this, '_handleRightClick'), MouseEventType.RIGHT_CLICK);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftDoubleClick'), MouseEventType.LEFT_DOUBLE_CLICK);
-            handler.setMouseAction(lang.hitch(this, '_handleMouseMove'), MouseEventType.MOVE);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftDown'), MouseEventType.LEFT_DOWN);
-            handler.setMouseAction(lang.hitch(this, '_handleLeftUp'), MouseEventType.LEFT_UP);
-            handler.setMouseAction(lang.hitch(this, '_handleWheel'), MouseEventType.WHEEL);
-            handler.setMouseAction(lang.hitch(this, '_handleRightDown'), MouseEventType.RIGHT_DOWN);
-            handler.setMouseAction(lang.hitch(this, '_handleRightUp'), MouseEventType.RIGHT_UP);
+            var handler = new ScreenSpaceEventHandler(canvas);
+            handler.setInputAction(lang.hitch(this, '_handleLeftClick'), ScreenSpaceEventType.LEFT_CLICK);
+            handler.setInputAction(lang.hitch(this, '_handleRightClick'), ScreenSpaceEventType.RIGHT_CLICK);
+            handler.setInputAction(lang.hitch(this, '_handleLeftDoubleClick'), ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+            handler.setInputAction(lang.hitch(this, '_handleMouseMove'), ScreenSpaceEventType.MOUSE_MOVE);
+            handler.setInputAction(lang.hitch(this, '_handleLeftDown'), ScreenSpaceEventType.LEFT_DOWN);
+            handler.setInputAction(lang.hitch(this, '_handleLeftUp'), ScreenSpaceEventType.LEFT_UP);
+            handler.setInputAction(lang.hitch(this, '_handleWheel'), ScreenSpaceEventType.WHEEL);
+            handler.setInputAction(lang.hitch(this, '_handleRightDown'), ScreenSpaceEventType.RIGHT_DOWN);
+            handler.setInputAction(lang.hitch(this, '_handleRightUp'), ScreenSpaceEventType.RIGHT_UP);
 
             //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -912,15 +898,19 @@ define([
 
             var scene = this.scene;
             var mode = scene.mode;
+
             var camera = scene.getCamera();
-            var controllers = camera.getControllers();
-            controllers.removeAll();
+            camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
+
+            var controller = scene.getScreenSpaceCameraController();
+            controller.enableTranslate = true;
+            controller.enableTilt = true;
+            controller.setEllipsoid(Ellipsoid.WGS84);
+            controller.columbusViewMode = CameraColumbusViewMode.FREE;
 
             if (mode === SceneMode.SCENE2D) {
-                controllers.add2D(scene.scene2D.projection);
-                scene.viewExtent(Extent.MAX_VALUE);
+                camera.controller.viewExtent(Extent.MAX_VALUE);
             } else if (mode === SceneMode.SCENE3D) {
-                this.centralBodyCameraController = controllers.addCentralBody();
                 var camera3D = this._camera3D;
                 camera3D.position.clone(camera.position);
                 camera3D.direction.clone(camera.direction);
@@ -937,8 +927,10 @@ define([
                 var maxRadii = Ellipsoid.WGS84.getMaximumRadius();
                 var position = new Cartesian3(0.0, -1.0, 1.0).normalize().multiplyByScalar(5.0 * maxRadii);
                 var direction = Cartesian3.ZERO.subtract(position).normalize();
-                var right = direction.cross(Cartesian3.UNIT_Z).normalize();
+                var right = direction.cross(Cartesian3.UNIT_Z);
                 var up = right.cross(direction);
+                right = direction.cross(up);
+                direction = up.cross(right);
 
                 var frustum = new PerspectiveFrustum();
                 frustum.fovy = CesiumMath.toRadians(60.0);
@@ -947,10 +939,9 @@ define([
                 camera.position = position;
                 camera.direction = direction;
                 camera.up = up;
+                camera.right = right;
                 camera.frustum = frustum;
                 camera.transform = transform;
-
-                controllers.addColumbusView();
             }
         },
 
@@ -1063,6 +1054,15 @@ define([
         },
 
         /**
+         * Initialize the current frame.
+         * @function
+         * @memberof CesiumViewerWidget.prototype
+         */
+        initializeFrame : function(currentTime) {
+            this.scene.initializeFrame(currentTime);
+        },
+
+        /**
          * Call this function prior to rendering each animation frame, to prepare
          * all CZML objects and other settings for the next frame.
          *
@@ -1094,10 +1094,9 @@ define([
          * Render the widget's scene.
          * @function
          * @memberof CesiumViewerWidget.prototype
-         * @param {JulianDate} currentTime - The date and time in the scene of the frame to be rendered
          */
-        render : function(currentTime) {
-            this.scene.render(currentTime);
+        render : function() {
+            this.scene.render();
         },
 
         _configureCentralBodyImagery : function() {
@@ -1166,8 +1165,9 @@ define([
          * var animationController = widget.animationController;
          * function updateAndRender() {
          *     var currentTime = animationController.update();
+         *     widget.initializeFrame(currentTime);
          *     widget.update(currentTime);
-         *     widget.render(currentTime);
+         *     widget.render();
          *     requestAnimationFrame(updateAndRender);
          * }
          * requestAnimationFrame(updateAndRender);
@@ -1178,10 +1178,12 @@ define([
          *
          * function updateAndRender() {
          *     var currentTime = animationController.update();
+         *     widget1.initializeFrame(currentTime);
+         *     widget2.initializeFrame(currentTime);
          *     widget1.update(currentTime);
          *     widget2.update(currentTime);
-         *     widget1.render(currentTime);
-         *     widget2.render(currentTime);
+         *     widget1.render();
+         *     widget2.render();
          *     requestAnimationFrame(updateAndRender);
          * }
          * requestAnimationFrame(updateAndRender);
@@ -1192,10 +1194,12 @@ define([
          * function updateAndRender() {
          *     var time1 = widget1.animationController.update();
          *     var time2 = widget2.animationController.update();
+         *     widget1.initializeFrame(time1);
+         *     widget2.initializeFrame(time2);
          *     widget1.update(time1);
          *     widget2.update(time2);
-         *     widget1.render(time1);
-         *     widget2.render(time2);
+         *     widget1.render();
+         *     widget2.render();
          *     requestAnimationFrame(updateAndRender);
          * }
          * requestAnimationFrame(updateAndRender);
@@ -1206,8 +1210,9 @@ define([
 
             function updateAndRender() {
                 var currentTime = animationController.update();
+                widget.initializeFrame(currentTime);
                 widget.update(currentTime);
-                widget.render(currentTime);
+                widget.render();
                 requestAnimationFrame(updateAndRender);
             }
 
