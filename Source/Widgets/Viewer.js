@@ -1,6 +1,6 @@
 /*global define,console*/
 define([
-    '../Core/DeveloperError',
+    '../Core/defaultValue',
     '../Core/loadJson',
     '../Core/BoundingRectangle',
     '../Core/Clock',
@@ -12,9 +12,9 @@ define([
     '../Core/Iso8601',
     '../Core/Fullscreen',
     '../Core/computeSunPosition',
-    '../Core/EventHandler',
+    '../Core/ScreenSpaceEventHandler',
     '../Core/FeatureDetection',
-    '../Core/MouseEventType',
+    '../Core/ScreenSpaceEventType',
     '../Core/Cartesian2',
     '../Core/Cartesian3',
     '../Core/JulianDate',
@@ -27,6 +27,7 @@ define([
     '../Scene/PerspectiveFrustum',
     '../Scene/Material',
     '../Scene/Scene',
+    '../Scene/CameraColumbusViewMode',
     '../Scene/CentralBody',
     '../Scene/BingMapsImageryProvider',
     '../Scene/BingMapsStyle',
@@ -34,12 +35,14 @@ define([
     '../Scene/SingleTileImageryProvider',
     '../Scene/PerformanceDisplay',
     '../Scene/SceneMode',
+    '../Scene/SkyBox',
+    '../Scene/SkyAtmosphere',
     '../DynamicScene/processCzml',
     '../DynamicScene/DynamicObjectView',
     '../DynamicScene/DynamicObjectCollection',
     '../DynamicScene/VisualizerCollection'
 ], function(
-    DeveloperError,
+    defaultValue,
     loadJson,
     BoundingRectangle,
     Clock,
@@ -51,9 +54,9 @@ define([
     Iso8601,
     Fullscreen,
     computeSunPosition,
-    EventHandler,
+    ScreenSpaceEventHandler,
     FeatureDetection,
-    MouseEventType,
+    ScreenSpaceEventType,
     Cartesian2,
     Cartesian3,
     JulianDate,
@@ -66,6 +69,7 @@ define([
     PerspectiveFrustum,
     Material,
     Scene,
+    CameraColumbusViewMode,
     CentralBody,
     BingMapsImageryProvider,
     BingMapsStyle,
@@ -73,6 +77,8 @@ define([
     SingleTileImageryProvider,
     PerformanceDisplay,
     SceneMode,
+    SkyBox,
+    SkyAtmosphere,
     processCzml,
     DynamicObjectView,
     DynamicObjectCollection,
@@ -89,7 +95,6 @@ define([
      */
     var Viewer = function(parentNode, options) {
         this.parentNode = parentNode;
-        this._sunPosition = new Cartesian3();
 
         // Copy all options to this.
         if (typeof options === 'object') {
@@ -107,7 +112,6 @@ define([
     // Static constructor for other frameworks like Dojo.
     Viewer.createOnWidget = function(externalWidget, parentNode) {
         externalWidget.parentNode = parentNode;
-        externalWidget._sunPosition = new Cartesian3();
 
         for (var opt in Viewer.prototype) {
             if (Viewer.prototype.hasOwnProperty(opt) && !externalWidget.hasOwnProperty(opt)) {
@@ -191,33 +195,14 @@ define([
      */
     Viewer.prototype.dayImageUrl = undefined;
     /**
-     * The URL for a nighttime image on the globe.
+     * Determines if a sky box with stars is drawn around the globe.  This is read-only after construction.
      *
-     * @type {String}
+     * @type {Boolean}
      * @memberof Viewer.prototype
+     * @default true
+     * @see SkyBox
      */
-    Viewer.prototype.nightImageUrl = undefined;
-    /**
-     * The URL for a specular map on the globe, typically with white for oceans and black for landmass.
-     *
-     * @type {String}
-     * @memberof Viewer.prototype
-     */
-    Viewer.prototype.specularMapUrl = undefined;
-    /**
-     * The URL for the clouds image on the globe.
-     *
-     * @type {String}
-     * @memberof Viewer.prototype
-     */
-    Viewer.prototype.cloudsMapUrl = undefined;
-    /**
-     * The URL for a bump map on the globe, showing mountain ranges.
-     *
-     * @type {String}
-     * @memberof Viewer.prototype
-     */
-    Viewer.prototype.bumpMapUrl = undefined;
+    Viewer.prototype.showSkyBox = true;
     /**
      * An object containing settings supplied by the end user, typically from the query string
      * of the URL of the page with the widget.
@@ -351,21 +336,6 @@ define([
             }
         } else {
             this._viewFromTo = undefined;
-
-            var scene = this.scene;
-            var mode = scene.mode;
-            var camera = scene.getCamera();
-            var controllers = camera.getControllers();
-            if (mode === SceneMode.SCENE2D) {
-                controllers.removeAll();
-                controllers.add2D(scene.scene2D.projection);
-            } else if (mode === SceneMode.SCENE3D) {
-                //For now just rename at the last location
-                //camera will stay in spindle/rotate mode.
-            } else if (mode === SceneMode.COLUMBUS_VIEW) {
-                controllers.removeAll();
-                controllers.addColumbusView();
-            }
         }
     };
 
@@ -488,9 +458,9 @@ define([
                 this.onObjectMousedOver(mousedOverObject);
             }
         }
-        if (typeof this.leftDown !== 'undefined' && this.leftDown && typeof this.onLeftDrag !== 'undefined') {
+        if (true === this.leftDown && typeof this.onLeftDrag !== 'undefined') {
             this.onLeftDrag(movement);
-        } else if (typeof this.rightDown !== 'undefined' && this.rightDown && typeof this.onZoom !== 'undefined') {
+        } else if (true === this.rightDown && typeof this.onZoom !== 'undefined') {
             this.onZoom(movement);
         }
     };
@@ -602,10 +572,13 @@ define([
      */
     Viewer.prototype.loadCzml = function(source, lookAt) {
         var widget = this;
+        widget._setLoading(true);
         loadJson(source).then(function(czml) {
             widget.addCzml(czml, source, lookAt);
+            widget._setLoading(false);
         },
         function(error) {
+            widget._setLoading(false);
             console.error(error);
             window.alert(error);
         });
@@ -622,16 +595,21 @@ define([
         event.stopPropagation(); // Stops some browsers from redirecting.
         event.preventDefault();
 
+        var widget = this;
+        widget._setLoading(true);
+        widget.removeAllCzml();
+
         var files = event.dataTransfer.files;
         var f = files[0];
         var reader = new FileReader();
-        var widget = this;
-        widget.removeAllCzml();
         reader.onload = function(evt) {
             widget.addCzml(JSON.parse(evt.target.result), f.name);
+            widget._setLoading(false);
         };
         reader.readAsText(f);
     };
+
+    Viewer.prototype._started = false;
 
     Viewer.prototype._startupCesium = function() {
         if (this._started) {
@@ -668,45 +646,44 @@ define([
             context.setThrowOnWebGLError(true);
         }
 
-        var maxTextureSize = context.getMaximumTextureSize();
-        if (maxTextureSize < 4095) {
-            // Mobile, or low-end card
-            this.dayImageUrl = this.dayImageUrl || this.imageBase + 'NE2_50M_SR_W_2048.jpg';
-            this.nightImageUrl = this.nightImageUrl || this.imageBase + 'land_ocean_ice_lights_512.jpg';
-        } else {
-            // Desktop
-            this.dayImageUrl = this.dayImageUrl || this.imageBase + 'NE2_50M_SR_W_4096.jpg';
-            this.nightImageUrl = this.nightImageUrl || this.imageBase + 'land_ocean_ice_lights_2048.jpg';
-            this.specularMapUrl = this.specularMapUrl || this.imageBase + 'earthspec1k.jpg';
-            this.cloudsMapUrl = this.cloudsMapUrl || this.imageBase + 'earthcloudmaptrans.jpg';
-            this.bumpMapUrl = this.bumpMapUrl || this.imageBase + 'earthbump1k.jpg';
-        }
+        var imageryUrl = this.imageBase;
+        this.dayImageUrl = defaultValue(this.dayImageUrl, imageryUrl + 'NE2_LR_LC_SR_W_DR_2048.jpg');
 
         var centralBody = this.centralBody = new CentralBody(ellipsoid);
 
         centralBody.logoOffset = new Cartesian2(125, 0);
 
-        this.showSkyAtmosphere(true);
-        this.showGroundAtmosphere(true);
         this._configureCentralBodyImagery();
 
         scene.getPrimitives().setCentralBody(centralBody);
 
+        if (this.showSkyBox) {
+            scene.skyBox = new SkyBox({
+                positiveX: imageryUrl + 'SkyBox/tycho8_px_80.jpg',
+                negativeX: imageryUrl + 'SkyBox/tycho8_mx_80.jpg',
+                positiveY: imageryUrl + 'SkyBox/tycho8_py_80.jpg',
+                negativeY: imageryUrl + 'SkyBox/tycho8_my_80.jpg',
+                positiveZ: imageryUrl + 'SkyBox/tycho8_pz_80.jpg',
+                negativeZ: imageryUrl + 'SkyBox/tycho8_mz_80.jpg'
+            });
+        }
+
+        scene.skyAtmosphere = new SkyAtmosphere(ellipsoid);
+
         var camera = scene.getCamera();
         camera.position = camera.position.multiplyByScalar(1.5);
+        camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
 
-        this.centralBodyCameraController = camera.getControllers().addCentralBody();
-
-        var handler = new EventHandler(canvas);
-        handler.setMouseAction(function(e) { widget._handleLeftClick(e); }, MouseEventType.LEFT_CLICK);
-        handler.setMouseAction(function(e) { widget._handleRightClick(e); }, MouseEventType.RIGHT_CLICK);
-        handler.setMouseAction(function(e) { widget._handleLeftDoubleClick(e); }, MouseEventType.LEFT_DOUBLE_CLICK);
-        handler.setMouseAction(function(e) { widget._handleMouseMove(e); }, MouseEventType.MOVE);
-        handler.setMouseAction(function(e) { widget._handleLeftDown(e); }, MouseEventType.LEFT_DOWN);
-        handler.setMouseAction(function(e) { widget._handleLeftUp(e); }, MouseEventType.LEFT_UP);
-        handler.setMouseAction(function(e) { widget._handleWheel(e); }, MouseEventType.WHEEL);
-        handler.setMouseAction(function(e) { widget._handleRightDown(e); }, MouseEventType.RIGHT_DOWN);
-        handler.setMouseAction(function(e) { widget._handleRightUp(e); }, MouseEventType.RIGHT_UP);
+        var handler = new ScreenSpaceEventHandler(canvas);
+        handler.setInputAction(function(e) { widget._handleLeftClick(e); }, ScreenSpaceEventType.LEFT_CLICK);
+        handler.setInputAction(function(e) { widget._handleRightClick(e); }, ScreenSpaceEventType.RIGHT_CLICK);
+        handler.setInputAction(function(e) { widget._handleLeftDoubleClick(e); }, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+        handler.setInputAction(function(e) { widget._handleMouseMove(e); }, ScreenSpaceEventType.MOUSE_MOVE);
+        handler.setInputAction(function(e) { widget._handleLeftDown(e); }, ScreenSpaceEventType.LEFT_DOWN);
+        handler.setInputAction(function(e) { widget._handleLeftUp(e); }, ScreenSpaceEventType.LEFT_UP);
+        handler.setInputAction(function(e) { widget._handleWheel(e); }, ScreenSpaceEventType.WHEEL);
+        handler.setInputAction(function(e) { widget._handleRightDown(e); }, ScreenSpaceEventType.RIGHT_DOWN);
+        handler.setInputAction(function(e) { widget._handleRightUp(e); }, ScreenSpaceEventType.RIGHT_UP);
 
         if (typeof this.highlightColor === 'undefined') {
             this.highlightColor = new Color(0.0, 1.0, 0.0);
@@ -717,8 +694,8 @@ define([
             this.highlightMaterial.uniforms.color = this.highlightColor;
         }
 
-        if (typeof this.onObjectLeftDoubleClickSelected === 'undefined') {
-            this.onObjectLeftDoubleClickSelected = function(selectedObject) {
+        if (typeof this.onObjectSelected === 'undefined') {
+            this.onObjectSelected = function(selectedObject) {
                 if (typeof selectedObject !== 'undefined' && typeof selectedObject.dynamicObject !== 'undefined') {
                     this.centerCameraOnPick(selectedObject);
                 }
@@ -758,11 +735,7 @@ define([
         this.visualizers = VisualizerCollection.createCzmlStandardCollection(scene, dynamicObjectCollection);
 
         if (typeof widget.endUserOptions.source !== 'undefined') {
-            if (typeof widget.endUserOptions.lookAt !== 'undefined') {
-                widget.loadCzml(widget.endUserOptions.source, widget.endUserOptions.lookAt);
-            } else {
-                widget.loadCzml(widget.endUserOptions.source);
-            }
+            widget.loadCzml(widget.endUserOptions.source, widget.endUserOptions.lookAt);
         }
 
         if (typeof widget.endUserOptions.stats !== 'undefined' && widget.endUserOptions.stats) {
@@ -792,15 +765,19 @@ define([
 
         var scene = this.scene;
         var mode = scene.mode;
+
         var camera = scene.getCamera();
-        var controllers = camera.getControllers();
-        controllers.removeAll();
+        camera.controller.constrainedAxis = Cartesian3.UNIT_Z;
+
+        var controller = scene.getScreenSpaceCameraController();
+        controller.enableTranslate = true;
+        controller.enableTilt = true;
+        controller.setEllipsoid(Ellipsoid.WGS84);
+        controller.columbusViewMode = CameraColumbusViewMode.FREE;
 
         if (mode === SceneMode.SCENE2D) {
-            controllers.add2D(scene.scene2D.projection);
-            scene.viewExtent(Extent.MAX_VALUE);
+            camera.controller.viewExtent(Extent.MAX_VALUE);
         } else if (mode === SceneMode.SCENE3D) {
-            this.centralBodyCameraController = controllers.addCentralBody();
             var camera3D = this._camera3D;
             camera3D.position.clone(camera.position);
             camera3D.direction.clone(camera.direction);
@@ -817,8 +794,10 @@ define([
             var maxRadii = Ellipsoid.WGS84.getMaximumRadius();
             var position = new Cartesian3(0.0, -1.0, 1.0).normalize().multiplyByScalar(5.0 * maxRadii);
             var direction = Cartesian3.ZERO.subtract(position).normalize();
-            var right = direction.cross(Cartesian3.UNIT_Z).normalize();
+            var right = direction.cross(Cartesian3.UNIT_Z);
             var up = right.cross(direction);
+            right = direction.cross(up);
+            direction = up.cross(right);
 
             var frustum = new PerspectiveFrustum();
             frustum.fovy = CesiumMath.toRadians(60.0);
@@ -827,35 +806,9 @@ define([
             camera.position = position;
             camera.direction = direction;
             camera.up = up;
+            camera.right = right;
             camera.frustum = frustum;
             camera.transform = transform;
-
-            controllers.addColumbusView();
-        }
-    };
-
-    /**
-     * Test if the clouds are configured and available for display.
-     *
-     * @function
-     * @memberof Viewer.prototype
-     * @returns {Boolean} <code>true</code> if the <code>cloudsMapSource</code> is defined.
-     */
-    Viewer.prototype.areCloudsAvailable = function() {
-        return typeof this.centralBody.cloudsMapSource !== 'undefined';
-    };
-
-    /**
-     * Enable or disable the display of clouds.
-     *
-     * @function
-     * @memberof Viewer.prototype
-     * @param {Boolean} useClouds - <code>true</code> to enable clouds, if configured.
-     */
-    Viewer.prototype.enableClouds = function(useClouds) {
-        if (this.areCloudsAvailable()) {
-            this.centralBody.showClouds = useClouds;
-            this.centralBody.showCloudShadows = useClouds;
         }
     };
 
@@ -885,21 +838,7 @@ define([
      * @param {Boolean} show - <code>true</code> to enable the effect.
      */
     Viewer.prototype.showSkyAtmosphere = function(show) {
-        this._showSkyAtmosphere = show;
-        this.centralBody.showSkyAtmosphere = show && this.centralBody.affectedByLighting;
-    };
-
-    /**
-     * Enable or disable the "ground atmosphere" effect, which makes the surface of
-     * the globe look pale at a distance.
-     *
-     * @function
-     * @memberof Viewer.prototype
-     * @param {Boolean} show - <code>true</code> to enable the effect.
-     */
-    Viewer.prototype.showGroundAtmosphere = function(show) {
-        this._showGroundAtmosphere = show;
-        this.centralBody.showGroundAtmosphere = show && this.centralBody.affectedByLighting;
+        this.scene.skyAtmosphere.show = show;
     };
 
     /**
@@ -982,6 +921,16 @@ define([
     };
 
     /**
+     * Initialize the current frame.
+     * @function
+     * @memberof Viewer.prototype
+     * @param {JulianDate} currentTime - The date and time in the scene of the frame to be rendered
+     */
+    Viewer.prototype.initializeFrame = function(currentTime) {
+        this.scene.initializeFrame(currentTime);
+    };
+
+    /**
      * Call this function prior to rendering each animation frame, to prepare
      * all CZML objects and other settings for the next frame.
      *
@@ -991,7 +940,6 @@ define([
      */
     Viewer.prototype.update = function(currentTime) {
 
-        this.scene.setSunPosition(computeSunPosition(currentTime, this._sunPosition));
         this.visualizers.update(currentTime);
 
         // Update the camera to stay centered on the selected object, if any.
@@ -1008,6 +956,10 @@ define([
      */
     Viewer.prototype.render = function() {
         this.scene.render();
+    };
+
+    Viewer.prototype._setLoading = function(isLoading) {
+        this.loading.style.display = isLoading ? 'block' : 'none';
     };
 
     Viewer.prototype._configureCentralBodyImagery = function() {
@@ -1049,11 +1001,6 @@ define([
                 imageLayers.lowerToBottom(newLayer);
             }
         }
-
-        centralBody.nightImageSource = this.nightImageUrl;
-        centralBody.specularMapSource = this.specularMapUrl;
-        centralBody.cloudsMapSource = this.cloudsMapUrl;
-        centralBody.bumpMapSource = this.bumpMapUrl;
     };
 
     /**
@@ -1081,6 +1028,7 @@ define([
      * var animationController = widget.animationController;
      * function updateAndRender() {
      *     var currentTime = animationController.update();
+     *     widget.initializeFrame(currentTime);
      *     widget.update(currentTime);
      *     widget.render();
      *     requestAnimationFrame(updateAndRender);
@@ -1093,6 +1041,8 @@ define([
      *
      * function updateAndRender() {
      *     var currentTime = animationController.update();
+     *     widget1.initializeFrame(currentTime);
+     *     widget2.initializeFrame(currentTime);
      *     widget1.update(currentTime);
      *     widget2.update(currentTime);
      *     widget1.render();
@@ -1107,6 +1057,8 @@ define([
      * function updateAndRender() {
      *     var time1 = widget1.animationController.update();
      *     var time2 = widget2.animationController.update();
+     *     widget1.initializeFrame(time1);
+     *     widget2.initializeFrame(time2);
      *     widget1.update(time1);
      *     widget2.update(time2);
      *     widget1.render();
@@ -1121,6 +1073,7 @@ define([
 
         function updateAndRender() {
             var currentTime = animationController.update();
+            widget.initializeFrame(currentTime);
             widget.update(currentTime);
             widget.render();
             requestAnimationFrame(updateAndRender);
