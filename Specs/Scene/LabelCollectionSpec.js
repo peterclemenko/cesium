@@ -4,6 +4,7 @@ defineSuite([
          'Specs/createContext',
          'Specs/destroyContext',
          'Specs/createCamera',
+         'Specs/createFrameState',
          'Specs/frameState',
          'Specs/pick',
          'Specs/render',
@@ -25,6 +26,7 @@ defineSuite([
          createContext,
          destroyContext,
          createCamera,
+         createFrameState,
          frameState,
          pick,
          render,
@@ -62,7 +64,7 @@ defineSuite([
         labels = new LabelCollection();
 
         us = context.getUniformState();
-        us.update(createCamera(context));
+        us.update(createFrameState(createCamera(context)));
     });
 
     afterEach(function() {
@@ -986,7 +988,7 @@ defineSuite([
 
         it('does not equal undefined', function() {
             var label = labels.add();
-            expect(label.equals(undefined)).toEqual(false);
+            expect(label).not.toEqual(undefined);
         });
 
         it('should have a number of glyphs equal to the number of characters', function() {
@@ -1388,8 +1390,8 @@ defineSuite([
         ];
         var bs = BoundingSphere.fromPoints(projectedPositions);
         bs.center = new Cartesian3(0.0, bs.center.x, bs.center.y);
-        expect(actual.center.equalsEpsilon(bs.center, CesiumMath.EPSILON8)).toEqual(true);
-        expect(actual.radius > bs.radius).toEqual(true);
+        expect(bs.center).toEqualEpsilon(actual.center, CesiumMath.EPSILON8);
+        expect(bs.radius).toBeLessThan(actual.radius);
     });
 
     it('computes bounding sphere in 2D', function() {
@@ -1433,7 +1435,7 @@ defineSuite([
         ];
         var bs = BoundingSphere.fromPoints(projectedPositions);
         bs.center = new Cartesian3(0.0, bs.center.x, bs.center.y);
-        expect(actual.center.equalsEpsilon(bs.center, CesiumMath.EPSILON8)).toEqual(true);
-        expect(actual.radius > bs.radius).toEqual(true);
+        expect(bs.center).toEqualEpsilon(actual.center, CesiumMath.EPSILON8);
+        expect(bs.radius).toBeLessThan(actual.radius);
     });
 });

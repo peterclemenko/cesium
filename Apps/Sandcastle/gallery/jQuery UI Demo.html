@@ -34,7 +34,6 @@
         border: none;
         width: 100%;
         height: 100%;
-        z-index: -1;
     }
     #toolbar {
         margin: 5px;
@@ -87,20 +86,14 @@
     // 3D is the default view
     $('#mode3D').button("option", { icons: { primary: "ui-icon-check" }}
         ).click(function () {
-            viewer.showSkyAtmosphere(true);
-            viewer.showGroundAtmosphere(true);
             viewer.sceneTransitioner.morphTo3D();
         });
 
     $('#modeColumbus').click(function () {
-        viewer.showSkyAtmosphere(false);
-        viewer.showGroundAtmosphere(false);
         viewer.sceneTransitioner.morphToColumbusView();
     });
 
     $('#mode2D').click(function () {
-        viewer.showSkyAtmosphere(false);
-        viewer.showGroundAtmosphere(false);
         viewer.sceneTransitioner.morphTo2D();
     });
 
