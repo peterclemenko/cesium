@@ -142,13 +142,13 @@ define([
     };
 
     /**
-     * Path to included images, so widget can find things like night textures and specular maps.
+     * Path to included images, so the widget can find things like sky box textures.
      *
      * @type {String}
      * @memberof Viewer.prototype
-     * @default '../../../Source/Assets/Imagery/'
+     * @default '../../../Source/Assets/Textures/'
      */
-    Viewer.prototype.imageBase = '../../../Source/Assets/Imagery/';
+    Viewer.prototype.imageBase = '../../../Source/Assets/Textures/';
 
     /**
      * Path to widget images.

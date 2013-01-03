@@ -25,7 +25,7 @@ define([
         templateString : '<div data-dojo-attach-point="parentNode" style="width: 100%; height: 100%;"></div>',
 
         constructor : function() {
-            this.imageBase = require.toUrl('Assets/Imagery') + '/';
+            this.imageBase = require.toUrl('Assets/Textures') + '/';
             this.widgetImages = require.toUrl('../Images') + '/';
         },
 
