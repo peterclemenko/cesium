@@ -56,7 +56,6 @@
     };
 
     var viewer = new Cesium.Viewer(parentNode, {
-        imageBase : '../../../Source/Assets/Imagery/',
         endUserOptions : endUserOptions,
         enableDragDrop : true,
         autoStartRenderLoop : false
@@ -66,6 +65,7 @@
     function updateAndRender() {
         // Standard render loop: Update to new time.
         var currentTime = viewer.animationController.update();
+        viewer.initializeFrame(currentTime);
         viewer.update(currentTime);
 
         // Customization: Display current time.

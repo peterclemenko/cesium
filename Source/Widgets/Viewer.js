@@ -136,8 +136,12 @@ define([
         this.canvas = document.createElement('canvas');
         this.canvas.style.cssText = 'width: 100%; height: 100%;';
 
-        this.containerNode.appendChild(this.cesiumLogo);
+        this.loading = document.createElement('div');
+        this.loading.className = 'cw-loading';
+
         this.containerNode.appendChild(this.canvas);
+        this.containerNode.appendChild(this.cesiumLogo);
+        this.containerNode.appendChild(this.loading);
         parentNode.appendChild(this.containerNode);
     };
 

@@ -92,6 +92,7 @@ require([
     // Custom render loop. See "startRenderLoop".
     function updateAndRender() {
         var currentTime = animationController.update();
+        widget.initializeFrame(currentTime);
         widget.update(currentTime);
         dom.byId('toolbar').innerHTML =
             currentTime.toDate().toUTCString();

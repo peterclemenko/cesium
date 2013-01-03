@@ -102,8 +102,6 @@
         useStreamingImagery : false,
         autoStartRenderLoop : false
     });
-    widget2.showGroundAtmosphere(false);
-    widget2.showSkyAtmosphere(false);
     widget2.sceneTransitioner.to2D();
 
     // Set up a render loop including both widgets.
@@ -111,6 +109,8 @@
         // Get the time from the shared controller, then
         // update and render both widgets.
         var currentTime = animationController.update();
+        widget1.initializeFrame(currentTime);
+        widget2.initializeFrame(currentTime);
         widget1.update(currentTime);
         widget2.update(currentTime);
         widget1.render();
