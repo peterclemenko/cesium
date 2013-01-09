@@ -30,16 +30,11 @@
     </style>
 </head>
 <body>
-<div id="cesiumContainer" class="fullSize"></div>
-<script>
+    <div id="cesiumContainer" class="fullSize"></div>
+    <script>
 
-    var parentNode = document.getElementById('cesiumContainer');
+    var widget = new Cesium.Viewer(document.getElementById('cesiumContainer'));
 
-    var widget = new Cesium.Viewer(parentNode, {
-        imageBase : '../Source/Assets/Textures/',   // TODO: Replace these two lines with new asset locator mechanism.
-        widgetImages : '../Source/Widgets/Images/'
-    });
-
-</script>
+    </script>
 </body>
 </html>

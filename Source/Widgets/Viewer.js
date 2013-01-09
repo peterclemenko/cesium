@@ -1,89 +1,90 @@
 /*global define,console*/
 define([
-    '../Core/defaultValue',
-    '../Core/loadJson',
-    '../Core/BoundingRectangle',
-    '../Core/Clock',
-    '../Core/ClockStep',
-    '../Core/ClockRange',
-    '../Core/Extent',
-    '../Core/AnimationController',
-    '../Core/Ellipsoid',
-    '../Core/Iso8601',
-    '../Core/Fullscreen',
-    '../Core/computeSunPosition',
-    '../Core/ScreenSpaceEventHandler',
-    '../Core/FeatureDetection',
-    '../Core/ScreenSpaceEventType',
-    '../Core/Cartesian2',
-    '../Core/Cartesian3',
-    '../Core/JulianDate',
-    '../Core/DefaultProxy',
-    '../Core/Transforms',
-    '../Core/requestAnimationFrame',
-    '../Core/Color',
-    '../Core/Matrix4',
-    '../Core/Math',
-    '../Scene/PerspectiveFrustum',
-    '../Scene/Material',
-    '../Scene/Scene',
-    '../Scene/CameraColumbusViewMode',
-    '../Scene/CentralBody',
-    '../Scene/BingMapsImageryProvider',
-    '../Scene/BingMapsStyle',
-    '../Scene/SceneTransitioner',
-    '../Scene/SingleTileImageryProvider',
-    '../Scene/PerformanceDisplay',
-    '../Scene/SceneMode',
-    '../Scene/SkyBox',
-    '../Scene/SkyAtmosphere',
-    '../DynamicScene/processCzml',
-    '../DynamicScene/DynamicObjectView',
-    '../DynamicScene/DynamicObjectCollection',
-    '../DynamicScene/VisualizerCollection'
-], function(
-    defaultValue,
-    loadJson,
-    BoundingRectangle,
-    Clock,
-    ClockStep,
-    ClockRange,
-    Extent,
-    AnimationController,
-    Ellipsoid,
-    Iso8601,
-    Fullscreen,
-    computeSunPosition,
-    ScreenSpaceEventHandler,
-    FeatureDetection,
-    ScreenSpaceEventType,
-    Cartesian2,
-    Cartesian3,
-    JulianDate,
-    DefaultProxy,
-    Transforms,
-    requestAnimationFrame,
-    Color,
-    Matrix4,
-    CesiumMath,
-    PerspectiveFrustum,
-    Material,
-    Scene,
-    CameraColumbusViewMode,
-    CentralBody,
-    BingMapsImageryProvider,
-    BingMapsStyle,
-    SceneTransitioner,
-    SingleTileImageryProvider,
-    PerformanceDisplay,
-    SceneMode,
-    SkyBox,
-    SkyAtmosphere,
-    processCzml,
-    DynamicObjectView,
-    DynamicObjectCollection,
-    VisualizerCollection
-) {
+        '../Core/buildModuleUrl',
+        '../Core/defaultValue',
+        '../Core/loadJson',
+        '../Core/BoundingRectangle',
+        '../Core/Clock',
+        '../Core/ClockStep',
+        '../Core/ClockRange',
+        '../Core/Extent',
+        '../Core/AnimationController',
+        '../Core/Ellipsoid',
+        '../Core/Iso8601',
+        '../Core/Fullscreen',
+        '../Core/computeSunPosition',
+        '../Core/ScreenSpaceEventHandler',
+        '../Core/FeatureDetection',
+        '../Core/ScreenSpaceEventType',
+        '../Core/Cartesian2',
+        '../Core/Cartesian3',
+        '../Core/JulianDate',
+        '../Core/DefaultProxy',
+        '../Core/Transforms',
+        '../Core/requestAnimationFrame',
+        '../Core/Color',
+        '../Core/Matrix4',
+        '../Core/Math',
+        '../Scene/PerspectiveFrustum',
+        '../Scene/Material',
+        '../Scene/Scene',
+        '../Scene/CameraColumbusViewMode',
+        '../Scene/CentralBody',
+        '../Scene/BingMapsImageryProvider',
+        '../Scene/BingMapsStyle',
+        '../Scene/SceneTransitioner',
+        '../Scene/SingleTileImageryProvider',
+        '../Scene/PerformanceDisplay',
+        '../Scene/SceneMode',
+        '../Scene/SkyBox',
+        '../Scene/SkyAtmosphere',
+        '../DynamicScene/processCzml',
+        '../DynamicScene/DynamicObjectView',
+        '../DynamicScene/DynamicObjectCollection',
+        '../DynamicScene/VisualizerCollection'
+    ], function(
+        buildModuleUrl,
+        defaultValue,
+        loadJson,
+        BoundingRectangle,
+        Clock,
+        ClockStep,
+        ClockRange,
+        Extent,
+        AnimationController,
+        Ellipsoid,
+        Iso8601,
+        Fullscreen,
+        computeSunPosition,
+        ScreenSpaceEventHandler,
+        FeatureDetection,
+        ScreenSpaceEventType,
+        Cartesian2,
+        Cartesian3,
+        JulianDate,
+        DefaultProxy,
+        Transforms,
+        requestAnimationFrame,
+        Color,
+        Matrix4,
+        CesiumMath,
+        PerspectiveFrustum,
+        Material,
+        Scene,
+        CameraColumbusViewMode,
+        CentralBody,
+        BingMapsImageryProvider,
+        BingMapsStyle,
+        SceneTransitioner,
+        SingleTileImageryProvider,
+        PerformanceDisplay,
+        SceneMode,
+        SkyBox,
+        SkyAtmosphere,
+        processCzml,
+        DynamicObjectView,
+        DynamicObjectCollection,
+        VisualizerCollection) {
     "use strict";
 
     /**
@@ -98,7 +99,7 @@ define([
 
         // Copy all options to this.
         if (typeof options === 'object') {
-            for (var opt in options) {
+            for ( var opt in options) {
                 if (options.hasOwnProperty(opt)) {
                     this[opt] = options[opt];
                 }
@@ -131,7 +132,9 @@ define([
         this.cesiumLogo.href = 'http://cesium.agi.com/';
         this.cesiumLogo.target = '_blank';
         this.cesiumLogo.style.cssText = 'display: block; position: absolute; bottom: 4px; left: 0; text-decoration: none; ' +
-            'background-image: url(' + this.widgetImages + 'Cesium_Logo_overlay.png); width: 118px; height: 26px;';
+            'background-image: url(' +
+            buildModuleUrl('Widgets/Images/Cesium_Logo_overlay.png') +
+            '); width: 118px; height: 26px;';
 
         this.canvas = document.createElement('canvas');
         this.canvas.style.cssText = 'width: 100%; height: 100%;';
@@ -144,24 +147,6 @@ define([
         this.containerNode.appendChild(this.loading);
         parentNode.appendChild(this.containerNode);
     };
-
-    /**
-     * Path to included images, so the widget can find things like sky box textures.
-     *
-     * @type {String}
-     * @memberof Viewer.prototype
-     * @default '../../../Source/Assets/Textures/'
-     */
-    Viewer.prototype.imageBase = '../../../Source/Assets/Textures/';
-
-    /**
-     * Path to widget images.
-     *
-     * @type {String}
-     * @memberof Viewer.prototype
-     * @default '../../../Source/Widgets/Images/'
-     */
-    Viewer.prototype.widgetImages = '../../../Source/Widgets/Images/';
 
     /**
      * Ellipsoid to use.
@@ -650,8 +635,10 @@ define([
             context.setThrowOnWebGLError(true);
         }
 
-        var imageryUrl = this.imageBase;
-        this.dayImageUrl = defaultValue(this.dayImageUrl, imageryUrl + 'NE2_LR_LC_SR_W_DR_2048.jpg');
+        var texturesPath = 'Assets/Textures/';
+        if (typeof this.dayImageUrl === 'undefined') {
+            this.dayImageUrl = buildModuleUrl(texturesPath + 'NE2_LR_LC_SR_W_DR_2048.jpg');
+        }
 
         var centralBody = this.centralBody = new CentralBody(ellipsoid);
 
@@ -663,12 +650,12 @@ define([
 
         if (this.showSkyBox) {
             scene.skyBox = new SkyBox({
-                positiveX: imageryUrl + 'SkyBox/tycho8_px_80.jpg',
-                negativeX: imageryUrl + 'SkyBox/tycho8_mx_80.jpg',
-                positiveY: imageryUrl + 'SkyBox/tycho8_py_80.jpg',
-                negativeY: imageryUrl + 'SkyBox/tycho8_my_80.jpg',
-                positiveZ: imageryUrl + 'SkyBox/tycho8_pz_80.jpg',
-                negativeZ: imageryUrl + 'SkyBox/tycho8_mz_80.jpg'
+                positiveX : buildModuleUrl(texturesPath + 'SkyBox/tycho8_px_80.jpg'),
+                negativeX : buildModuleUrl(texturesPath + 'SkyBox/tycho8_mx_80.jpg'),
+                positiveY : buildModuleUrl(texturesPath + 'SkyBox/tycho8_py_80.jpg'),
+                negativeY : buildModuleUrl(texturesPath + 'SkyBox/tycho8_my_80.jpg'),
+                positiveZ : buildModuleUrl(texturesPath + 'SkyBox/tycho8_pz_80.jpg'),
+                negativeZ : buildModuleUrl(texturesPath + 'SkyBox/tycho8_mz_80.jpg')
             });
         }
 
