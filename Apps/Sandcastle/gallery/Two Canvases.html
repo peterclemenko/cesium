@@ -10,63 +10,14 @@
     <script type="text/javascript" src="../../../Build/CesiumUnminified/Cesium.js"></script>
     <script type="text/javascript" src="../Sandcastle-warn.js"></script>
 </head>
-<body data-sandcastle-bucket="bucket-plain.html" data-sandcastle-title="Cesium (standalone)">
+<body class="sandcastle-loading" data-sandcastle-bucket="bucket-plain.html" data-sandcastle-title="Cesium (standalone)">
 <style>
-    body {
-        background: #000;
-        color: #eee;
-        font-family: sans-serif;
-        font-size: 9pt;
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-    .top {
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 50%;
-        right: 0;
-        border: none;
-        border-bottom: solid 2px #888;
-        width: 100%;
-        height: 50%;
-    }
-    .bottom {
-        display: block;
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        top: 50%;
-        right: 0;
-        border: none;
-        border-top: solid 2px #888;
-        width: 100%;
-        height: 50%;
-    }
-    #topbar {
-        margin: 5px;
-        padding: 2px 5px;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-    #bottombar {
-        margin: 5px;
-        padding: 2px 5px;
-        position: absolute;
-        top: 50%;
-        left: 0;
-    }
+    @import url(../templates/bucket.css);
 </style>
-
 <div id="cesiumContainerTop" class="top"></div>
 <div id="cesiumContainerBottom" class="bottom"></div>
-<div id="topbar">Loading...</div>
-<div id="bottombar"></div>
+<div id="topToolbar"></div>
+<div id="bottomToolbar"></div>
 <script id="cesium_sandcastle_script">
 (function () {
     "use strict";
@@ -76,15 +27,12 @@
     // separate animationControllers to show a scene at
     // different times.
 
-    var topParent = document.getElementById('cesiumContainerTop');
-    var bottomParent = document.getElementById('cesiumContainerBottom');
-
     var endUserOptions = {
         //'source' : '../../CesiumViewer/Gallery/simple.czml'
     };
 
     // Create the top widget in 3D mode.
-    var widget1 = new Cesium.Viewer(topParent, {
+    var widget1 = new Cesium.Viewer(document.getElementById('cesiumContainerTop'), {
         endUserOptions : endUserOptions,
         useStreamingImagery : false,
         autoStartRenderLoop : false
@@ -96,7 +44,7 @@
 
     // Create the bottom widget, using the top widget's
     // animationController, and switch to 2D mode.
-    var widget2 = new Cesium.Viewer(bottomParent, {
+    var widget2 = new Cesium.Viewer(document.getElementById('cesiumContainerBottom'), {
         animationController : animationController,
         endUserOptions : endUserOptions,
         useStreamingImagery : false,
@@ -120,8 +68,8 @@
     // Begin rendering by scheduling the loop once manually.
     Cesium.requestAnimationFrame(updateAndRender);
 
-    document.getElementById('topbar').innerHTML = '3D';
-    document.getElementById('bottombar').innerHTML = '2D';
+    document.getElementById('topToolbar').innerHTML = '3D';
+    document.getElementById('bottomToolbar').innerHTML = '2D';
 }());
 </script>
 </body>

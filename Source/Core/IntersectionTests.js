@@ -76,7 +76,7 @@ define([
      *
      * @param {Ray} ray The ray.
      * @param {Ellipsoid} ellipsoid The ellipsoid.
-     * @returns {Array} An array of one or two intersection scalars for points along the ray or undefined if there are no intersections.
+     * @returns {Object} An object with the first (<code>start</code>) and the second (<code>stop</code>) intersection scalars for points along the ray or undefined if there are no intersections.
      *
      * @exception {DeveloperError} ray is required.
      * @exception {DeveloperError} ellipsoid is required.
@@ -145,30 +145,13 @@ define([
             difference = q2 - 1.0; // Negatively valued.
             w2 = w.magnitudeSquared();
             product = w2 * difference; // Negatively valued.
-            if (qw < 0.0) {
-                // Looking inward.
-                discriminant = qw * qw - product;
-                temp = qw - Math.sqrt(discriminant); // Avoid cancellation.  Negatively valued.
-                return {
-                    start : 0.0,
-                    stop : difference / temp
-                };
-            } else if (qw > 0.0) {
-                // Looking outward.
-                discriminant = qw * qw - product;
-                temp = qw + Math.sqrt(discriminant); // Avoid cancellation. Positively valued.
-                return {
-                    start : 0.0,
-                    stop : temp / w2
-                };
-            } else {
-                // qw == 0.0 // Looking tangent.
-                temp = Math.sqrt(-product);
-                return {
-                    start : 0.0,
-                    stop : temp / w2
-                };
-            }
+
+            discriminant = qw * qw - product;
+            temp = -qw + Math.sqrt(discriminant); // Positively valued.
+            return {
+                start : 0.0,
+                stop : temp / w2
+            };
         } else {
             // q2 == 1.0. On ellipsoid.
             if (qw < 0.0) {
@@ -370,6 +353,77 @@ define([
         }
 
         return undefined;
+    };
+
+    var lineSegmentPlaneDifference = new Cartesian3();
+
+    /**
+     * Computes the intersection of a line segment and a plane.
+     * @memberof IntersectionTests
+     *
+     * @param {Cartesian3} endPoint0 An end point of the line segment.
+     * @param {Cartesian3} endPoint1 The other end point of the line segment.
+     * @param {Cartesian3} planeNormal The plane normal.
+     * @param {Number} planeD The distance from the plane to the origin.
+     * @param {Cartesian3} [result] The object onto which to store the result.
+     * @returns {Cartesian3} The intersection point or undefined if there is no intersection.
+     *
+     * @exception {DeveloperError} endPoint0 is required.
+     * @exception {DeveloperError} endPoint1 is required.
+     * @exception {DeveloperError} planeNormal is required.
+     * @exception {DeveloperError} planeD is required.
+     *
+     * @example
+     * var origin = ellipsoid.cartographicToCartesian(Cartographic.fromDegrees(-75.59777, 40.03883, 0.0));
+     * var normal = ellipsoid.geodeticSurfaceNormal(origin);
+     * var constant = -Cartesian3.dot(normal, origin);
+     *
+     * var p0 = new Cartesian3(...);
+     * var p1 = new Cartesian3(...);
+     *
+     * // find the intersection of the line segment from p0 to p1 and the tangent plane at origin.
+     * var intersection = IntersectionTests.lineSegmentPlane(p0, p1, normal, constant);
+     */
+    IntersectionTests.lineSegmentPlane = function(endPoint0, endPoint1, planeNormal, planeD, result) {
+        if (typeof endPoint0 === 'undefined') {
+            throw new DeveloperError('endPoint0 is required.');
+        }
+
+        if (typeof endPoint1 === 'undefined') {
+            throw new DeveloperError('endPoint1 is required.');
+        }
+
+        if (typeof planeNormal === 'undefined') {
+            throw new DeveloperError('planeNormal is required.');
+        }
+
+        if (typeof planeD === 'undefined') {
+            throw new DeveloperError('planeD is required.');
+        }
+
+        var difference = Cartesian3.subtract(endPoint1, endPoint0, lineSegmentPlaneDifference);
+        var nDotDiff = Cartesian3.dot(planeNormal, difference);
+
+        // check if the segment and plane are parallel
+        if (Math.abs(nDotDiff) < CesiumMath.EPSILON6) {
+            return undefined;
+        }
+
+        var nDotP0 = Cartesian3.dot(planeNormal, endPoint0);
+        var t = -(planeD + nDotP0) / nDotDiff;
+
+        // intersection only if t is in [0, 1]
+        if (t < 0.0 || t > 1.0) {
+            return undefined;
+        }
+
+        // intersection is endPoint0 + t * (endPoint1 - endPoint0)
+        if (typeof result === 'undefined') {
+            result = new Cartesian3();
+        }
+        Cartesian3.multiplyByScalar(difference, t, result);
+        Cartesian3.add(endPoint0, result, result);
+        return result;
     };
 
     return IntersectionTests;

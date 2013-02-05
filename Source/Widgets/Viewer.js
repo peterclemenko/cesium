@@ -649,13 +649,16 @@ define([
         scene.getPrimitives().setCentralBody(centralBody);
 
         if (this.showSkyBox) {
+            var getSkyBoxUrl = function(suffix) {
+                return buildModuleUrl(texturesPath + 'SkyBox/tycho2t3_80_' + suffix + '.jpg');
+            };
             scene.skyBox = new SkyBox({
-                positiveX : buildModuleUrl(texturesPath + 'SkyBox/tycho8_px_80.jpg'),
-                negativeX : buildModuleUrl(texturesPath + 'SkyBox/tycho8_mx_80.jpg'),
-                positiveY : buildModuleUrl(texturesPath + 'SkyBox/tycho8_py_80.jpg'),
-                negativeY : buildModuleUrl(texturesPath + 'SkyBox/tycho8_my_80.jpg'),
-                positiveZ : buildModuleUrl(texturesPath + 'SkyBox/tycho8_pz_80.jpg'),
-                negativeZ : buildModuleUrl(texturesPath + 'SkyBox/tycho8_mz_80.jpg')
+                positiveX : getSkyBoxUrl('px'),
+                negativeX : getSkyBoxUrl('mx'),
+                positiveY : getSkyBoxUrl('py'),
+                negativeY : getSkyBoxUrl('my'),
+                positiveZ : getSkyBoxUrl('pz'),
+                negativeZ : getSkyBoxUrl('mz')
             });
         }
 

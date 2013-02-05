@@ -3,13 +3,13 @@ require({
         baseUrl: '../../Source',
         packages: [{
             name: 'dojo',
-            location: '../ThirdParty/dojo-release-1.7.2-src/dojo'
+        location : '../ThirdParty/dojo-release-1.8.3-src/dojo'
         }, {
             name: 'dijit',
-            location: '../ThirdParty/dojo-release-1.7.2-src/dijit'
+        location : '../ThirdParty/dojo-release-1.8.3-src/dijit'
         }, {
             name: 'dojox',
-            location: '../ThirdParty/dojo-release-1.7.2-src/dojox'
+        location : '../ThirdParty/dojo-release-1.8.3-src/dojox'
         }, {
             name: 'Sandcastle',
             location: '../Apps/Sandcastle'
@@ -46,8 +46,8 @@ require({
         'dijit/layout/TabContainer',
         'dijit/Toolbar',
         'dijit/ToolbarSeparator',
-        'dojo/domReady!'],
-    function (
+    'dojo/domReady!'
+], function(
             LinkButton,
             CesiumWidget,
             CesiumViewerWidget,
@@ -64,22 +64,25 @@ require({
             registry,
             popup,
             TooltipDialog,
-            ContentPane
-    ) {
+    ContentPane) {
         "use strict";
+
         parser.parse();
+
         window.CesiumWidget = CesiumWidget; // for autocomplete.
         window.CesiumViewerWidget = CesiumViewerWidget; // for autocomplete.
-        fx.fadeOut({ node: 'loading', onEnd: function () {
+    fx.fadeOut({
+        node : 'loading',
+        onEnd : function() {
             domConstruct.destroy('loading');
-        }}).play();
+        }
+    }).play();
 
         var logOutput = document.getElementById('logOutput');
         function appendConsole(className, message) {
             var ele = document.createElement('span');
             ele.className = className;
-            ele.textContent = message + "\n";
-console.log('appendConsole: ' + message);
+            ele.textContent = message + '\n';
             logOutput.appendChild(ele);
             logOutput.parentNode.scrollTop = logOutput.clientHeight + 8 - logOutput.parentNode.clientHeight;
             hideGallery();
@@ -92,11 +95,9 @@ console.log('appendConsole: ' + message);
         }
 
         function findCssStyle(selectorText) {
-            var iSheets, lenSheets = document.styleSheets.length, rules;
-            for (iSheets = 0; iSheets < lenSheets; ++iSheets) {
-                rules = document.styleSheets[iSheets].cssRules;
-                var iRules, lenRules = rules.length;
-                for (iRules = 0; iRules < lenRules; ++iRules) {
+        for ( var iSheets = 0, lenSheets = document.styleSheets.length; iSheets < lenSheets; ++iSheets) {
+            var rules = document.styleSheets[iSheets].cssRules;
+            for ( var iRules = 0, lenRules = rules.length; iRules < lenRules; ++iRules) {
                     if (rules[iRules].selectorText === selectorText) {
                         return rules[iRules];
                     }
@@ -118,7 +119,12 @@ console.log('appendConsole: ' + message);
         var cesiumContainer = registry.byId('cesiumContainer');
         var docNode = dom.byId('docPopup');
         var docMessage = dom.byId('docPopupMessage');
-        var local = { 'docTypes': [],  'headers': '<html><head></head><body>', 'bucketName': '', 'emptyBucket': ''};
+    var local = {
+        'docTypes' : [],
+        'headers' : '<html><head></head><body>',
+        'bucketName' : '',
+        'emptyBucket' : ''
+    };
         var bucketTypes = {};
         var demoTooltips = {};
         var errorLines = [];
@@ -253,7 +259,8 @@ console.log('appendConsole: ' + message);
                 }).placeAt(cesiumContainer);
                 // After the iframe loads, re-scroll to selected field.
                 docTabs[title].domNode.childNodes[0].onload = function () {
-                    this.onload = function () {};
+                this.onload = function() {
+                };
                     this.src = link;
                 };
                 cesiumContainer.selectChild(docTabs[title]);
@@ -278,12 +285,11 @@ console.log('appendConsole: ' + message);
             if (docError && selectedText && selectedText.length < 50) {
                 hideGallery();
             } else if (lowerText && lowerText in local.docTypes && typeof local.docTypes[lowerText].push === 'function') {
-                var member, ele, i, len = local.docTypes[lowerText].length;
                 docMessage.innerHTML = '';
-                for (i = 0; i < len; ++i) {
-                    member = local.docTypes[lowerText][i];
-                    ele = document.createElement('a');
-                    ele.target = "_blank";
+            for ( var i = 0, len = local.docTypes[lowerText].length; i < len; ++i) {
+                var member = local.docTypes[lowerText][i];
+                var ele = document.createElement('a');
+                ele.target = '_blank';
                     ele.textContent = member.replace('.html', '').replace('module-', '').replace('#', '.');
                     ele.href = '../../Build/Documentation/' + member;
                     ele.onclick = onDocClick;
@@ -295,7 +301,7 @@ console.log('appendConsole: ' + message);
         }
 
         function onCursorActivity() {
-            docNode.style.left = "-999px";
+        docNode.style.left = '-999px';
             if (typeof docTimer !== 'undefined') {
                 window.clearTimeout(docTimer);
             }
@@ -341,7 +347,9 @@ console.log('appendConsole: ' + message);
         }
 
         function clearErrorsAddHints() {
-            var line, hint, hints, i, len;
+        var line;
+        var i;
+        var len;
             hintTimer = undefined;
             closeGalleryTooltip();
             while (errorLines.length > 0) {
@@ -357,23 +365,21 @@ console.log('appendConsole: ' + message);
             var code = jsEditor.getValue();
             if (searchTerm !== '') {
                 var codeLines = code.split('\n');
-                len = codeLines.length;
-                for (i = 0; i < len; ++i) {
+            for (i = 0, len = codeLines.length; i < len; ++i) {
                     if (searchRegExp.test(codeLines[i])) {
-                        line = jsEditor.setMarker(i, makeLineLabel('Search: ' + searchTerm), "searchMarker");
-                        jsEditor.setLineClass(line, "searchLine");
+                    line = jsEditor.setMarker(i, makeLineLabel('Search: ' + searchTerm), 'searchMarker');
+                    jsEditor.setLineClass(line, 'searchLine');
                         errorLines.push(line);
                     }
                 }
             }
             if (!JSHINT(code, hintOptions)) {
-                hints = JSHINT.errors;
-                len = hints.length;
-                for (i = 0; i < len; ++i) {
-                    hint = hints[i];
+            var hints = JSHINT.errors;
+            for (i = 0, len = hints.length; i < len; ++i) {
+                var hint = hints[i];
                     if ((hint !== null) && (typeof hint.reason !== 'undefined') && (hint.line > 0)) {
-                        line = jsEditor.setMarker(hint.line - 1, makeLineLabel(hint.reason), "hintMarker");
-                        jsEditor.setLineClass(line, "hintLine");
+                    line = jsEditor.setMarker(hint.line - 1, makeLineLabel(hint.reason), 'hintMarker');
+                    jsEditor.setLineClass(line, 'hintLine');
                         errorLines.push(line);
                     }
                 }
@@ -398,9 +404,21 @@ console.log('appendConsole: ' + message);
         function scrollToLine(lineNumber) {
             if (typeof lineNumber !== 'undefined') {
                 jsEditor.setCursor(lineNumber);
-                jsEditor.setSelection({line: lineNumber - 2, ch:0}, {line: lineNumber - 2, ch: 0});
+            jsEditor.setSelection({
+                line : lineNumber - 2,
+                ch : 0
+            }, {
+                line : lineNumber - 2,
+                ch : 0
+            });
                 jsEditor.focus();
-                jsEditor.setSelection({line: lineNumber - 1, ch: 0}, {line: lineNumber - 1, ch: 0});
+            jsEditor.setSelection({
+                line : lineNumber - 1,
+                ch : 0
+            }, {
+                line : lineNumber - 1,
+                ch : 0
+            });
             }
         }
 
@@ -412,8 +430,8 @@ console.log('appendConsole: ' + message);
                 jsEditor.clearMarker(line);
             }
             if (lineNum > 0) {
-                line = jsEditor.setMarker(lineNum - 1, makeLineLabel('highlighted by demo'), "highlightMarker");
-                jsEditor.setLineClass(line, "highlightLine");
+            line = jsEditor.setMarker(lineNum - 1, makeLineLabel('highlighted by demo'), 'highlightMarker');
+            jsEditor.setLineClass(line, 'highlightLine');
                 highlightLines.push(line);
                 scrollToLine(lineNum);
             }
@@ -444,51 +462,66 @@ console.log('appendConsole: ' + message);
             CodeMirror.simpleHint(cm, CodeMirror.cesiumHint);
         };
 
-        jsEditor = CodeMirror.fromTextArea(document.getElementById("code"), {
-            mode: "javascript",
+    jsEditor = CodeMirror.fromTextArea(document.getElementById('code'), {
+        mode : 'javascript',
             lineNumbers: true,
             matchBrackets: true,
             indentUnit: 4,
             onCursorActivity: onCursorActivity,
             onChange: scheduleHint,
             extraKeys: {
-                "Ctrl-Space": "autocomplete",
-                "F8": "runCesium",
-                "Tab": "indentMore",
-                "Shift-Tab": "indentLess"
+            'Ctrl-Space' : 'autocomplete',
+            'F8' : 'runCesium',
+            'Tab' : 'indentMore',
+            'Shift-Tab' : 'indentLess'
             }
         });
 
-        htmlEditor = CodeMirror.fromTextArea(document.getElementById("htmlBody"), {
-            mode: "text/html",
+    htmlEditor = CodeMirror.fromTextArea(document.getElementById('htmlBody'), {
+        mode : 'text/html',
             lineNumbers: true,
             matchBrackets: true,
             indentUnit: 4,
             extraKeys: {
-                "F8": "runCesium",
-                "Tab": "indentMore",
-                "Shift-Tab": "indentLess"
+            'F8' : 'runCesium',
+            'Tab' : 'indentMore',
+            'Shift-Tab' : 'indentLess'
+        }
+    });
+
+    registry.byId('codeContainer').watch("selectedChildWidget", function(name, oldPane, newPane) {
+        if (newPane.id === 'jsContainer') {
+            jsEditor.focus();
+        } else if (newPane.id === 'htmlContainer') {
+            htmlEditor.focus();
             }
         });
 
         function activateBucketScripts(bucketDoc) {
-            var headNodes = bucketDoc.head.childNodes, i, len = headNodes.length, node, nodes = [];
-            var scriptEle, j, numAttrs;
-            for (i = 0; i < len; ++i) {
+        var headNodes = bucketDoc.head.childNodes;
+        var node;
+        var nodes = [];
+        for (var i = 0, len = headNodes.length; i < len; ++i) {
                 node = headNodes[i];
-                if (typeof node.tagName === 'string' && node.tagName === 'SCRIPT' &&
+            if (typeof node.tagName === 'string' &&
+                    node.tagName === 'SCRIPT' &&
                         node.src.indexOf('Sandcastle-header.js') < 0) {  // header is included in blank frame.
                     nodes.push(node);
                 }
             }
-            len = nodes.length;
-            for (i = 0; i < len; ++i) {
+
+        for (i = 0, len = nodes.length; i < len; ++i) {
                 bucketDoc.head.removeChild(nodes[i]);
             }
 
+        // Apply user HTML to bucket.
+        var htmlElement = bucketDoc.createElement('div');
+        htmlElement.innerHTML = htmlEditor.getValue();
+        bucketDoc.body.appendChild(htmlElement);
+
             var onScriptTagError = function () {
                 if (bucketFrame.contentDocument === bucketDoc) {
-                    appendConsole('consoleError', "Error loading " + this.src);
+                appendConsole('consoleError', 'Error loading ' + this.src);
                     appendConsole('consoleError', "Make sure Cesium is built, see the Contributor's Guide for details.");
                 }
             };
@@ -501,35 +534,31 @@ console.log('appendConsole: ' + message);
                 }
                 if (nodes.length > 0) {
                     node = nodes.shift();
-                    scriptEle = bucketDoc.createElement('script');
-                    numAttrs = node.attributes.length;
-                    var hasSrc = false, name, val;
-                    for (j = 0; j < numAttrs; ++j) {
-                        name = node.attributes[j].name;
-                        val = node.attributes[j].value;
-                        scriptEle.setAttribute(name, val);
+                var scriptElement = bucketDoc.createElement('script');
+                var hasSrc = false;
+                for ( var j = 0, numAttrs = node.attributes.length; j < numAttrs; ++j) {
+                    var name = node.attributes[j].name;
+                    var val = node.attributes[j].value;
+                    scriptElement.setAttribute(name, val);
                         if (name === 'src' && val) {
                             hasSrc = true;
                         }
                     }
-                    scriptEle.innerHTML = node.innerHTML;
+                scriptElement.innerHTML = node.innerHTML;
                     if (hasSrc) {
-                        scriptEle.onload = loadScript;
-                        scriptEle.onerror = onScriptTagError;
-                        bucketDoc.head.appendChild(scriptEle);
+                    scriptElement.onload = loadScript;
+                    scriptElement.onerror = onScriptTagError;
+                    bucketDoc.head.appendChild(scriptElement);
                     } else {
-                        bucketDoc.head.appendChild(scriptEle);
+                    bucketDoc.head.appendChild(scriptElement);
                         loadScript();
                     }
                 } else {
-                    // Apply user code to bucket.
-                    var bodyEle = bucketDoc.createElement('div');
-                    bodyEle.innerHTML = htmlEditor.getValue();
-                    bucketDoc.body.appendChild(bodyEle);
-                    var jsEle = bucketDoc.createElement('script');
-                    jsEle.type = 'text/javascript';
-                    jsEle.textContent = (addExtraLine ? '\n' : '') + jsEditor.getValue();
-                    bucketDoc.body.appendChild(jsEle);
+                // Apply user JS to bucket
+                var element = bucketDoc.createElement('script');
+                element.type = 'text/javascript';
+                element.textContent = (addExtraLine ? '\n' : '') + jsEditor.getValue();
+                bucketDoc.body.appendChild(element);
                 }
             };
             loadScript();
@@ -542,24 +571,24 @@ console.log('appendConsole: ' + message);
                 if (local.headers.substring(0, local.emptyBucket.length) !== local.emptyBucket) {
                     appendConsole('consoleError', 'Error, first part of ' + local.bucketName + ' must match first part of bucket.html exactly.');
                 } else {
-                    var pos = local.headers.indexOf('<body class="'), pos2;
-                    if (pos > 0) {
-                        pos += 13;
-                        pos2 = local.headers.indexOf('"', pos);
-                        if (pos2 > pos) {
-                            bucketDoc.body.className = local.headers.substring(pos, pos2);
+                var bodyAttributes = local.headers.match(/<body([^>]*?)>/)[1];
+                var attributeRegex = /([-a-z_]+)\s*="([^"]*?)"/ig;
+                //group 1 attribute name, group 2 attribute value.  Assumes double-quoted attributes.
+                var attributeMatch;
+                while ((attributeMatch = attributeRegex.exec(bodyAttributes)) !== null) {
+                    var attributeName = attributeMatch[1];
+                    var attributeValue = attributeMatch[2];
+                    if (attributeName === 'class') {
+                        bucketDoc.body.className = attributeValue;
+                    } else if (attributeName === 'data-sandcastle-title') {
+                        bucketPane.set('title', attributeValue);
+                        document.getElementById('includes').textContent = attributeValue;
+                    } else {
+                        bucketDoc.body.setAttribute(attributeName, attributeValue);
                         }
                     }
-                    pos = local.headers.indexOf('data-sandcastle-title="');
-                    if (pos > 0) {
-                        pos += 23;
-                        pos2 = local.headers.indexOf('"', pos);
-                        if (pos2 > pos) {
-                            bucketPane.set('title', local.headers.substring(pos, pos2));
-                            document.getElementById('includes').textContent = local.headers.substring(pos, pos2);
-                        }
-                    }
-                    pos = local.headers.indexOf('</head>');
+
+                var pos = local.headers.indexOf('</head>');
                     var extraHeaders = local.headers.substring(local.emptyBucket.length, pos);
                     bucketDoc.head.innerHTML += extraHeaders;
                     activateBucketScripts(bucketDoc);
@@ -654,17 +683,16 @@ console.log('appendConsole: ' + message);
                 }
                 if (bucketDoc.body.getAttribute('data-sandcastle-loaded') !== 'yes') {
                     bucketDoc.body.setAttribute('data-sandcastle-loaded', 'yes');
-                    logOutput.innerHTML = "";
+                logOutput.innerHTML = '';
                     // This happens after a Run (F8) reloads bucket.html, to inject the editor code
                     // into the iframe, causing the demo to run there.
                     applyBucket();
                     if (docError) {
-                        appendConsole('consoleError', "Documentation not available.  Please run the " +
-                                "'generateDocumentation' build script to generate Cesium documentation.");
+                    appendConsole('consoleError', "Documentation not available.  Please run the 'generateDocumentation' build script to generate Cesium documentation.");
                         showGallery();
                     }
                     if (galleryError) {
-                        appendConsole('consoleError', "Error loading gallery, please run the build script.");
+                    appendConsole('consoleError', 'Error loading gallery, please run the build script.');
                     }
                 }
             } else if (typeof e.data.log !== 'undefined') {
@@ -674,8 +702,8 @@ console.log('appendConsole: ' + message);
                 // Console error messages from the iframe display in Sandcastle
                 appendConsole('consoleError', e.data.error);
                 if (typeof e.data.lineNumber !== 'undefined') {
-                    line = jsEditor.setMarker(e.data.lineNumber - 1, makeLineLabel(e.data.rawErrorMsg), "errorMarker");
-                    jsEditor.setLineClass(line, "errorLine");
+                line = jsEditor.setMarker(e.data.lineNumber - 1, makeLineLabel(e.data.rawErrorMsg), 'errorMarker');
+                jsEditor.setLineClass(line, 'errorLine');
                     errorLines.push(line);
                     scrollToLine(e.data.lineNumber);
                 }
@@ -736,30 +764,44 @@ console.log('appendConsole: ' + message);
             CodeMirror.commands.autocomplete(jsEditor);
         });
 
+    function getDemoHtml() {
+        return local.headers +
+               htmlEditor.getValue() +
+               '<script id="cesium_sandcastle_script">\n' +
+               jsEditor.getValue() +
+               '</script>\n' +
+               '</body>\n' +
+               '</html>\n';
+    }
+
         registry.byId('dropDownSaveAs').on('show', function () {
-            var html = local.headers + htmlEditor.getValue() +
-                '<script id="cesium_sandcastle_script">\n' + jsEditor.getValue() +
-                '</script>\n</body>\n</html>\n';
 
             var currentDemoName = ioQuery.queryToObject(window.location.search.substring(1)).src;
             currentDemoName = window.decodeURIComponent(currentDemoName.replace('.html', ''));
             var description = encodeHTML(registry.byId('description').get('value').replace(/\n/g, '\\n')).replace(/\"/g, '&quot;');
+
+        var html = getDemoHtml();
             html = html.replace('<title>', '<meta name="description" content="' + description + '">\n    <title>');
 
-            var octetBlob = new Blob([ html ], { 'type' : 'application/octet-stream', 'endings' : 'native' });
+        var octetBlob = new Blob([html], {
+            'type' : 'application/octet-stream',
+            'endings' : 'native'
+        });
             var octetBlobURL = getURL.createObjectURL(octetBlob);
             dom.byId('saveAsFile').href = octetBlobURL;
         });
 
         registry.byId('buttonNewWindow').on('click', function () {
-            var html = local.headers + htmlEditor.getValue() +
-                '<script id="cesium_sandcastle_script">\n' + jsEditor.getValue() +
-                '</script>\n</body>\n</html>\n';
             var baseHref = window.location.href;
             var pos = baseHref.lastIndexOf('/');
             baseHref = baseHref.substring(0, pos) + '/gallery/';
+
+        var html = getDemoHtml();
             html = html.replace('<head>', '<head>\n    <base href="' + baseHref + '">');
-            var htmlBlob = new Blob([ html ], { 'type' : 'text/html;charset=utf-8', 'endings' : 'native' });
+        var htmlBlob = new Blob([html], {
+            'type' : 'text/html;charset=utf-8',
+            'endings' : 'native'
+        });
             var htmlBlobURL = getURL.createObjectURL(htmlBlob);
             window.open(htmlBlobURL, '_blank');
             window.focus();
@@ -823,7 +865,8 @@ console.log('appendConsole: ' + message);
                 // Store the file contents for later searching.
                 demo.code = value;
                 demo.bucket = 'bucket-dojo.html';
-                var pos = value.indexOf('data-sandcastle-bucket="'), pos2;
+            var pos = value.indexOf('data-sandcastle-bucket="');
+            var pos2;
                 if (pos > 0) {
                     pos += 24;
                     pos2 = value.indexOf('"', pos);
